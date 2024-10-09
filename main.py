@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import chainlit as cl
 from langgraph.graph import StateGraph, END
-from agents.agents import problem_analyzer_agent
+from agents.agents import problem_analyzer_agent, code_generator_agent
 from schemas import AgentState
 
 
@@ -14,10 +14,25 @@ async def on_chat_start():
     ).send()
 
 
+# Define a function to determine the next step based on 'proceed'
+def decide_next_step(state: AgentState):
+    return state["proceed"]  # This should return either 'continue', 'new', or 'cancel'
+
+
 # Create the graph.
 workflow = StateGraph(AgentState)
 workflow.add_node("problem_analyzer", problem_analyzer_agent)
-workflow.add_edge("problem_analyzer", END)
+workflow.add_node("code_generator", code_generator_agent)
+# Use add_conditional_edges for cleaner transitions based on the proceed value
+workflow.add_conditional_edges(
+    source="problem_analyzer",
+    path=decide_next_step,  # The function that determines the next step
+    path_map={
+        "continue": "code_generator",  # Proceed to the next node (replace with actual node name)
+        "new": "problem_analyzer",  # Loop back to problem_analyzer for a new plan
+        "cancel": END,  # End the workflow
+    },
+)
 workflow.set_entry_point("problem_analyzer")
 app = workflow.compile()
 
@@ -96,7 +111,7 @@ async def main(message: cl.Message):
             # It's code (e.g., Python code)
             # Wrap the code in triple backticks to preserve formatting
             prompt_files.append(f"File: {filename}\nCode:\n```python\n{content}\n```")
-            
+
     formatted_data = "\n\n".join(prompt_files)
 
     # Create the AgentState
