@@ -3,12 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# folder where best improvements are stored
+generated/
+
 
 #chainlit .files
 .files
-
-# folder where best improvements are stored
-improvements/
 
 # C extensions
 *.so

@@ -2,8 +2,17 @@ import os
 import pandas as pd
 import chainlit as cl
 from langgraph.graph import StateGraph, END
-from agents.agents import problem_analyzer_agent, code_generator_agent
+from agents.agents import (
+    docker_environment_files_agent,
+    problem_analyzer_agent,
+    code_generator_agent,
+    start_docker_container,
+)
 from schemas import AgentState
+
+# Ensure the 'generated' directory exists
+generated_dir = "generated"
+os.makedirs(generated_dir, exist_ok=True)
 
 
 # Starting message
@@ -23,6 +32,8 @@ def decide_next_step(state: AgentState):
 workflow = StateGraph(AgentState)
 workflow.add_node("problem_analyzer", problem_analyzer_agent)
 workflow.add_node("code_generator", code_generator_agent)
+workflow.add_node("docker_files", docker_environment_files_agent)
+workflow.add_node("start_docker", start_docker_container)
 # Use add_conditional_edges for cleaner transitions based on the proceed value
 workflow.add_conditional_edges(
     source="problem_analyzer",
@@ -33,6 +44,9 @@ workflow.add_conditional_edges(
         "cancel": END,  # End the workflow
     },
 )
+workflow.add_edge("code_generator", "docker_files")
+workflow.add_edge("docker_files", "start_docker")
+workflow.add_edge("start_docker", END)
 workflow.set_entry_point("problem_analyzer")
 app = workflow.compile()
 
@@ -49,6 +63,20 @@ async def main(message: cl.Message):
             if isinstance(element, cl.File):
                 file_name = element.name  # Original filename
                 file_path = element.path  # Path to stored file
+
+                # Define the new file path in the generated directory
+                new_file_path = os.path.join(generated_dir, file_name)
+                # Save the file to the 'generated' directory
+                try:
+                    with open(file_path, "rb") as f_in, open(
+                        new_file_path, "wb"
+                    ) as f_out:
+                        f_out.write(f_in.read())
+                    print(f"Tiedosto {file_name} tallennettu /generated-hakemistoon.")
+                except Exception as e:
+                    await cl.Message(
+                        content=f"Virhe tiedoston {file_name} tallentamisessa: {str(e)}"
+                    ).send()
 
                 # Check file extension
                 if file_name.endswith((".xlsx", ".xls")):
