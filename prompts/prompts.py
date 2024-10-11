@@ -29,6 +29,13 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
 
     The code must be fully functional and structured to solve the task optimally or near-optimally, depending on the method chosen. You should also define any necessary test parameters derived from the user input or provided files to validate the solution.
 
+    If the provided files include data sheets (e.g., Excel files), ensure that the necessary packages for file handling (such as pandas or openpyxl) are included, and the code correctly handles file input/output as part of the solution. LLM must analyze the files and understand how to process them appropriately.
+
+    In your response, generate the following fields:
+    - **python_code**: The fully functional Python code that solves the user's problem.
+    - **requirements**: A comprehensive list of all Python packages or dependencies (e.g., pandas, PuLP, openpyxl) needed to run the generated Python code. This will be used to create a requirements.txt file.
+    - **resources**: List any additional files, resources, or external data (e.g., Excel sheets) that the code requires to run successfully.
+
     Summary of the user's input:
     {user_summary}
 
@@ -44,16 +51,15 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
     Provided data (Python code, Excel files, or may be empty):
     {data}
     
-
-
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
     - Should the solution use PuLP for exact optimization, or is a heuristic algorithm more appropriate for solving this problem?
     - How should the code structure reflect the optimization method to ensure clarity and efficiency?
     - Define parameters for testing, based on user input or the provided files, to validate the optimization approach.
-    - What packages or libraries are required for requirements.txt to run the generated Python code?
+    - What packages or libraries are required for requirements.txt to run the generated Python code, including any necessary for file handling (e.g., pandas, openpyxl) if provided data includes Excel or other files?
     """
 )
+
 
 DOCKER_FILES_PROMPT = ChatPromptTemplate.from_template(
     """
@@ -65,15 +71,21 @@ DOCKER_FILES_PROMPT = ChatPromptTemplate.from_template(
 
     The generated Python code will always be saved as **generated.py**, so your Dockerfile and compose.yaml should be set up accordingly.
 
-    Here’s an example of how folder watching can be added in the compose.yaml file:
+- The Docker Compose `watch` feature under the `develop` section to automatically handle file changes. For example:
     ```yaml
-    develop:
-      watch:
-        - action: sync
-          path: ./*.py  # Watch for changes in Python files
-          target: /app
-        - action: rebuild
-          path: requirements.txt  # Rebuild if dependencies change
+services:
+  app:
+    build: .
+    container_name: my-python-app
+    volumes:
+      - .:/app
+    command: python /app/generated.py  # Modify the command as per your project
+    watch:
+      - action: sync
+        path: ./*.py  # Watch for changes in Python files
+        target: /app
+      - action: rebuild
+        path: requirements.txt  # Rebuild if dependencies change
     ```
 
     Generated Python code:
@@ -81,6 +93,9 @@ DOCKER_FILES_PROMPT = ChatPromptTemplate.from_template(
 
     Generated requirements (requirements.txt):
     {requirements}
+    
+    Remember to include any additional resources or files that are required to run the Python code but are not listed in the main requirements.
+    {resources}
 
     Key tasks:
     - Create a Dockerfile with the necessary configurations to run the generated Python code.

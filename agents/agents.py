@@ -1,10 +1,14 @@
 import os
 import subprocess
+import logging
+from typing import Dict, Any
 import chainlit as cl
+import docker
 from prompts.prompts import CODE_PROMPT, DOCKER_FILES_PROMPT, TASK_ANALYSIS_PROMPT
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 from schemas import AgentState, DockerFiles, Purpose, Code
+from docker.errors import DockerException
 
 # .env file is used to store the api key
 load_dotenv()
@@ -88,8 +92,14 @@ async def code_generator_agent(state: AgentState):
     )
     response = structured_llm.invoke(prompt)
     state["code"] = response
-    print(response.python_code)
-    print(response.requirements)
+    print("\nKOODI: " + response.python_code)
+    print("\nPAKETIT: " + response.requirements)
+    # check if optional resources are present
+    print(
+        "\nRESURSSIT: " + response.resources
+        if response.resources
+        else "No resources provided"
+    )
 
     # write the code to a file and save it to generated/
     with open("generated/generated.py", "w", encoding="utf-8") as f:
@@ -107,7 +117,9 @@ async def docker_environment_files_agent(state: AgentState):
     inputs = state["code"]
     structured_llm = llm.with_structured_output(DockerFiles)
     prompt = DOCKER_FILES_PROMPT.format(
-        python_code=inputs.python_code, requirements=inputs.requirements
+        python_code=inputs.python_code,
+        requirements=inputs.requirements,
+        resources=inputs.resources,
     )
     response = structured_llm.invoke(prompt)
     print(response.dockerfile)
@@ -121,46 +133,62 @@ async def docker_environment_files_agent(state: AgentState):
 
     return state
 
-async def start_docker_container(state: AgentState):
-    print("*** START DOCKER CONTAINER AGENT ***")
 
-    # Navigate to the 'generated' directory where the Dockerfile is located
-    os.chdir('generated')
+async def start_docker_container_agent(state: AgentState):
+    print("*** START DOCKER CONTAINER AGENT ***")
+    #TODO:: Pitää käyttää subprocessia että saa watchin homman toimimaan!!!
+    # Navigate to the 'generated' directory where the Dockerfile and docker-compose.yaml are located
+    os.chdir("generated")
 
     try:
-        # Build the Docker image
-        build_command = ["docker", "build", "-t", "generated_image", "."]
-        print(f"Running command: {' '.join(build_command)}")
-        build_process = subprocess.run(build_command, capture_output=True, text=True)
-        
-        if build_process.returncode != 0:
-            print("Docker build failed:")
-            print(build_process.stderr)
-            state['docker_output'] = build_process.stderr
-            return state
+        # Initialize Docker client
+        client = docker.from_env()
 
-        # Run the Docker container
-        run_command = ["docker", "run", "--rm", "generated_image"]
-        print(f"Running command: {' '.join(run_command)}")
-        run_process = subprocess.run(run_command, capture_output=True, text=True)
-        
-        if run_process.returncode != 0:
-            print("Docker run failed:")
-            print(run_process.stderr)
-            state['docker_output'] = run_process.stderr
-            return state
+        # Build the image
+        print("Building Docker image...")
+        image, build_logs = client.images.build(path=".", tag="generated_image")
 
-        # Capture the output
-        print("Docker run output:")
-        print(run_process.stdout)
-        state['docker_output'] = run_process.stdout
+        # Optionally print build logs if you want more detailed logging
+        for log in build_logs:
+            print(log.get("stream", ""))
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        state['docker_output'] = str(e)
+        # Run the container and capture stdout/stderr in real-time
+        print("Running Docker container...")
+        container = client.containers.run(
+            image="generated_image",
+            remove=True,  # Automatically remove the container after it exits
+            detach=True,  # Run the container in detached mode
+        )
+
+        # Capture and stream logs from the container in real-time
+        print("Streaming container logs:")
+        full_output = ""
+        for log in container.logs(stream=True, stdout=True, stderr=True):
+            log_output = log.decode("utf-8").strip()
+            print(log_output)  # Print each log line as it arrives
+            full_output += log_output + "\n"  # Capture all logs into full_output
+
+        # Wait for the container to finish
+        exit_code = container.wait()["StatusCode"]
+
+        if exit_code != 0:
+            print(f"Container exited with error code {exit_code}")
+            state["docker_output"] = (
+                f"Error: Container exited with code {exit_code}\n{full_output}"
+            )
+        else:
+            print("Container finished successfully")
+            state["docker_output"] = full_output
+
+    except DockerException as e:
+        print(f"An error occurred with Docker: {e}")
+        state["docker_output"] = str(e)
 
     finally:
         # Change back to the original directory
-        os.chdir('..')
+        os.chdir("..")
+
+    print("\nDOCKER OUTPUT:")
+    print(state["docker_output"])
 
     return state
