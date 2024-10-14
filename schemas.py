@@ -35,11 +35,11 @@ class Code(BaseModel):
     )
     requirements: Optional[str] = Field(
         default="No requirements provided",  # Default value in case it's missing
-        description="A list of requirements or dependencies needed to run the generated Python code, such as those used in a requirements.txt file."
+        description="A list of requirements or dependencies needed to run the generated Python code, such as those used in a requirements.txt file.",
     )
     resources: Optional[str] = Field(
         default="No additional resources provided",  # Default value in case it's missing
-        description="Any additional requirements or files, such as data sheets (Excel files) or other resources, that are not included in the main requirements list but are necessary for the program."
+        description="Any additional requirements or files, such as data sheets (Excel files) or other resources, that are not included in the main requirements list but are necessary for the program.",
     )
 
 
@@ -49,6 +49,26 @@ class DockerFiles(BaseModel):
     )
     compose_file: str = Field(
         description="The docker-compose.yaml file that specifies the services and configurations for the Docker environment."
+    )
+
+
+class OutputOfCode(BaseModel):
+    answer: str = Field(
+        description="The numerical answer, detailing the quantities or results of the calculation (e.g., how much material to cut)."
+    )
+    table: Optional[str] = Field(
+        description="Optional table format answer, summarizing the results in a structured layout (e.g., materials used per order).",
+        default=None
+    )
+    answer_description: str = Field(
+        description="A detailed explanation or context for the numerical answer, providing additional insights or interpretations of the result."
+    )
+    improvement: str = Field(
+        description="Suggestions for enhancing the solution or optimization process."
+    )
+    objective_value: Optional[float] = Field(
+        description="The objective value achieved by the optimization algorithm (e.g., the minimized waste or cost).",
+        default=None
     )
 
 

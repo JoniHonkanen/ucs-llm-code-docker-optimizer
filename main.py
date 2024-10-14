@@ -7,6 +7,7 @@ from agents.agents import (
     problem_analyzer_agent,
     code_generator_agent,
     start_docker_container_agent,
+    code_output_analyzer_agent
 )
 from schemas import AgentState
 
@@ -34,6 +35,7 @@ workflow.add_node("problem_analyzer", problem_analyzer_agent)
 workflow.add_node("code_generator", code_generator_agent)
 workflow.add_node("docker_files", docker_environment_files_agent)
 workflow.add_node("start_docker", start_docker_container_agent)
+workflow.add_node("output_analyzer", code_output_analyzer_agent)
 # Use add_conditional_edges for cleaner transitions based on the proceed value
 workflow.add_conditional_edges(
     source="problem_analyzer",
@@ -46,7 +48,8 @@ workflow.add_conditional_edges(
 )
 workflow.add_edge("code_generator", "docker_files")
 workflow.add_edge("docker_files", "start_docker")
-workflow.add_edge("start_docker", END)
+workflow.add_edge("start_docker", "output_analyzer")
+workflow.add_edge("output_analyzer", END)
 workflow.set_entry_point("problem_analyzer")
 app = workflow.compile()
 
