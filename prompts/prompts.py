@@ -48,7 +48,8 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
     Planned next steps for solving the problem:
     {next_steps}
 
-    Provided data (Python code, Excel files, or may be empty):
+    The code **must use the provided data (including resources, orders, and any other numeric values or relevant details)** to accurately represent the problem. The solution should ensure that all provided data are appropriately utilized, whether they pertain to materials, quantities, measurements, or any other key factors relevant to the user's task.
+    Provided data (Python code, Excel files, or may be empty)
     {data}
     
     Key points to address:
@@ -57,6 +58,7 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
     - How should the code structure reflect the optimization method to ensure clarity and efficiency?
     - Define parameters for testing, based on user input or the provided files, to validate the optimization approach.
     - What packages or libraries are required for requirements.txt to run the generated Python code, including any necessary for file handling (e.g., pandas, openpyxl) if provided data includes Excel or other files? Ensure to handle potential encoding issues in file reading to avoid errors.
+    - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer).**
     """
 )
 
@@ -102,30 +104,36 @@ CODE_OUTPUT_ANALYSIS_PROMPT = ChatPromptTemplate.from_template(
 
     **Original Question:**
     {user_summary}
+    
+    **Planned steps (we should be in last steps now):
+    {next_steps}
 
     **Output of the Code:**
     {code_output}
 
-    **Instructions:**
+**Instructions:**
 
-    - **Parse the Numerical Results or Tables:** 
-      - Extract the relevant numerical answers or tables from the code output (e.g., how materials should be cut, total waste, objective value, etc.).
-      - Present these results clearly and concisely.
-    - **Answer the Original Question:** 
-      - Based on the parsed results, provide a clear and direct answer to the user's question.
-    - **Evaluate the Output Data:** 
-      - Does the output data look correct and logically consistent?
-      - Are there any issues, errors, or discrepancies present?
-    - **Assess the Solution:**
-      - Has the original question or problem been effectively solved?
-      - How well does the solution meet the requirements?
-    - **Summarize the Results:** 
-      - Highlight key findings or outputs from the code (e.g., how the materials were allocated, total waste, etc.).
-      - Provide any relevant metrics or outcomes.
-    - **Provide Insights and Recommendations:** 
-      - Offer any observations about the quality or efficiency of the solution.
-      - Suggest possible improvements or next steps if applicable.
+- **Parse the Numerical Results or Tables:** 
+  - Extract the relevant numerical answers or tables from the code output (e.g., how materials should be cut, total waste, objective value, etc.).
+  - Present these results clearly and concisely.
+- **Check against the Planned Steps:**
+  - Verify that the final output reflects the steps outlined in "planned steps part".
+  - Ensure that the results match the plan and that each step in the process has been executed correctly.
+  - If any planned steps were skipped or not fully implemented, provide details.
+- **Answer the Original Question:** 
+  - Based on the parsed results, provide a clear and direct answer to the user's question.
+- **Evaluate the Output Data:** 
+  - Does the output data look correct and logically consistent?
+  - Are there any issues, errors, or discrepancies present?
+- **Assess the Solution:**
+  - Has the original question or problem been effectively solved?
+  - How well does the solution meet the requirements?
+- **Summarize the Results:** 
+  - Highlight key findings or outputs from the code (e.g., how the materials were allocated, total waste, etc.).
+  - Provide any relevant metrics or outcomes.
+- **Provide Insights and Recommendations:** 
+  - Offer any observations about the quality or efficiency of the solution.
 
-    **Your response should be thorough, accurate, and suitable for use in further analysis or decision-making.**
+**Your response should be thorough, accurate, and suitable for use in further analysis or decision-making.**
     """
 )

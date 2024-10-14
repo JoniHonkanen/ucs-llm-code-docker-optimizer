@@ -58,17 +58,20 @@ class OutputOfCode(BaseModel):
     )
     table: Optional[str] = Field(
         description="Optional table format answer, summarizing the results in a structured layout (e.g., materials used per order).",
-        default=None
+        default=None,
     )
     answer_description: str = Field(
-        description="A detailed explanation or context for the numerical answer, providing additional insights or interpretations of the result."
+        description="A very detailed explanation or context for the numerical answer, providing additional insights or interpretations of the result."
     )
     improvement: str = Field(
         description="Suggestions for enhancing the solution or optimization process."
     )
     objective_value: Optional[float] = Field(
         description="The objective value achieved by the optimization algorithm (e.g., the minimized waste or cost).",
-        default=None
+        default=None,
+    )
+    explanation: str = Field(
+        description="A detailed step-by-step explanation of how the algorithm arrived at the final result, describing key decisions and constraints."
     )
 
 
@@ -82,3 +85,5 @@ class AgentState(TypedDict):
     code: Code
     dockerFiles: DockerFiles
     docker_output: str
+    result = OutputOfCode
+    results: List[OutputOfCode]

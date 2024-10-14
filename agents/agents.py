@@ -210,11 +210,13 @@ async def code_output_analyzer_agent(state: AgentState):
     structured_llm = llm.with_structured_output(OutputOfCode)
     prompt = CODE_OUTPUT_ANALYSIS_PROMPT.format(
         user_summary=state["purpose"].user_summary,
+        next_steps=state["purpose"].next_steps,
         code_output=docker_output,
     )
     response = structured_llm.invoke(prompt)
     print("\nRESPONSE:")
     print(response)
+    state["result"] = response
 
     return state
 
