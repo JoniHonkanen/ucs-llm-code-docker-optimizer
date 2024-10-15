@@ -105,6 +105,9 @@ CODE_OUTPUT_ANALYSIS_PROMPT = ChatPromptTemplate.from_template(
     **Original Question:**
     {user_summary}
     
+    **Original Goal:**
+    {original_goal}
+    
     **Planned steps (we should be in last steps now):
     {next_steps}
 
@@ -135,5 +138,58 @@ CODE_OUTPUT_ANALYSIS_PROMPT = ChatPromptTemplate.from_template(
   - Offer any observations about the quality or efficiency of the solution.
 
 **Your response should be thorough, accurate, and suitable for use in further analysis or decision-making.**
+    """
+)
+
+NEW_LOOP_CODE_PROMPT = ChatPromptTemplate.from_template(
+    """
+    Your task is to generate Python code that solves the optimization problem described by the user, using either PuLP (for linear programming) or heuristic algorithms (e.g., genetic algorithms, simulated annealing) depending on the problem's complexity and requirements.
+
+    You should also take into account the results from previous optimization iterations to further improve the solution. Analyze the previously generated results (e.g., cutting patterns, waste minimization, resource utilization) and incorporate those insights into the next round of optimization. Ensure that the new solution is an improvement over the prior result and **does not duplicate any previous code**.
+
+    Based on the user's input, the provided files (e.g., Python code, Excel sheets), and the outcomes from the previous iteration(s), generate Python code that implements either exact optimization (using PuLP) or heuristic algorithms where an approximate solution is more practical. The goal is to develop a solution that efficiently addresses the problem's constraints and objectives, while **explicitly improving on the last used code**.
+
+    The new code must:
+    - Be fully functional and structured to solve the task optimally or near-optimally, depending on the method chosen.
+    - Avoid duplicating any parts of the previous code and **explicitly comment on what improvements have been made** in terms of efficiency, structure, or the optimization goal (e.g., less waste, faster routes).
+    - Define any necessary test parameters derived from the user input, provided files, and previous results to validate the new solution.
+
+    If the provided files include data sheets (e.g., Excel files), ensure that the necessary packages for file handling (such as pandas or openpyxl) are included, and the code correctly handles file input/output as part of the solution. **It is suggested to explicitly specify file-handling options like using the 'openpyxl' engine for reading `.xlsx` files and ensuring no encoding issues arise by avoiding the default 'charmap' codec or potential encoding conflicts**. The LLM must analyze the files and understand how to process them appropriately.
+
+    In your response, generate the following fields:
+    - **python_code**: The fully functional Python code that solves the user's problem, improving on previous iterations and avoiding duplication of the last used code.
+    - **requirements**: A comprehensive list of all Python packages or dependencies (e.g., pandas, PuLP, openpyxl) needed to run the generated Python code. This will be used to create a requirements.txt file.
+    - **resources**: List any additional files, resources, or external data (e.g., Excel sheets) that the code requires to run successfully.
+
+    **Original user input:**
+    {user_summary}
+
+    **Original problem type:**
+    {problem_type}
+
+    **Original optimization focus:**
+    {optimization_focus}
+
+    **Original planned next steps:**
+    {next_steps}
+
+    **Results from prior optimizations:**
+    {previous_results}
+    
+    **Last used code:**
+    {previous_code}
+
+    The code **must use the provided data (including resources, orders, and any other numeric values or relevant details)** to accurately represent the problem. The solution should ensure that all provided data are appropriately utilized, whether they pertain to materials, quantities, measurements, or any other key factors relevant to the user's task. The previous optimization results should also guide the current solution in refining the approach.
+    
+    Provided data (Python code, Excel files, or may be empty):
+    {data}
+    
+    Key points to address:
+    - What is the optimization problem, and what constraints or requirements need to be considered?
+    - Should the solution use PuLP for exact optimization, or is a heuristic algorithm more appropriate for solving this problem?
+    - **How does the new code differ from the last used code?** What improvements have been made to avoid duplication and enhance the previous solution?
+    - Define parameters for testing, based on user input, the provided files, and the results of previous optimizations, to validate the new solution.
+    - What packages or libraries are required for requirements.txt to run the generated Python code, including any necessary for file handling (e.g., pandas, openpyxl) if provided data includes Excel or other files? Ensure to handle potential encoding issues in file reading to avoid errors.
+    - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer), with improvements from the previous iteration and no duplication.**
     """
 )

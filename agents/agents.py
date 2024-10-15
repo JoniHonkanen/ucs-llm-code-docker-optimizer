@@ -9,11 +9,11 @@ from prompts.prompts import (
     DOCKER_FILES_PROMPT,
     TASK_ANALYSIS_PROMPT,
     CODE_OUTPUT_ANALYSIS_PROMPT,
+    NEW_LOOP_CODE_PROMPT,
 )
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 from schemas import AgentState, DockerFiles, Purpose, Code, OutputOfCode
-from docker.errors import DockerException
 
 # .env file is used to store the api key
 load_dotenv()
@@ -210,6 +210,7 @@ async def code_output_analyzer_agent(state: AgentState):
     structured_llm = llm.with_structured_output(OutputOfCode)
     prompt = CODE_OUTPUT_ANALYSIS_PROMPT.format(
         user_summary=state["purpose"].user_summary,
+        original_goal=state["purpose"].goal,
         next_steps=state["purpose"].next_steps,
         code_output=docker_output,
     )
@@ -217,6 +218,53 @@ async def code_output_analyzer_agent(state: AgentState):
     print("\nRESPONSE:")
     print(response)
     state["result"] = response
+    # Ensure that 'results' exists in the state dictionary
+    if "results" not in state:
+        state["results"] = []
+    
+    # Now append the response
+    state["results"].append(response)
+
+    res = await cl.AskActionMessage(
+        content="Lets begin new optimization round?",
+        actions=[
+            cl.Action(
+                name="continue", value="continue", label="✅ Yes, let's continue"
+            ),
+            cl.Action(name="done", value="new", label="❌ This is enough for now"),
+        ],
+    ).send()
+
+    if res and res.get("value") == "continue":
+        state["proceed"] = "continue"
+        await cl.Message(
+            content="Starting new optimization round!",
+        ).send()
+    else:
+        state["proceed"] = "done"
+        await cl.Message(
+            content="I'm generating the final report! We are done for now.",
+        ).send()
+
+    return state
+
+
+async def new_loop_agent(state: AgentState):
+    print("*** NEW LOOP AGENT ***")
+    inputs = state["purpose"]
+    last_code = state["code"]
+    last_output = state["result"]
+    structured_llm = llm.with_structured_output(Code)
+    prompt = NEW_LOOP_CODE_PROMPT.format(
+        user_summary=inputs.user_summary,
+        problem_type=inputs.problem_type,
+        optimization_focus=inputs.optimization_focus,
+        next_steps=inputs.next_steps,
+        data=state["promptFiles"],
+        previous_results = last_output.answer_description,
+        previous_code = last_code.python_code,
+    )
+    structured_llm.invoke(prompt)
 
     return state
 

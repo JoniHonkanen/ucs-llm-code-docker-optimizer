@@ -7,7 +7,8 @@ from agents.agents import (
     problem_analyzer_agent,
     code_generator_agent,
     start_docker_container_agent,
-    code_output_analyzer_agent
+    code_output_analyzer_agent,
+    new_loop_agent,
 )
 from schemas import AgentState
 
@@ -26,7 +27,9 @@ async def on_chat_start():
 
 # Define a function to determine the next step based on 'proceed'
 def decide_next_step(state: AgentState):
-    return state["proceed"]  # This should return either 'continue', 'new', or 'cancel'
+    return state[
+        "proceed"
+    ]  # This should return either 'continue', 'new', 'done' or 'cancel'
 
 
 # Create the graph.
@@ -36,6 +39,7 @@ workflow.add_node("code_generator", code_generator_agent)
 workflow.add_node("docker_files", docker_environment_files_agent)
 workflow.add_node("start_docker", start_docker_container_agent)
 workflow.add_node("output_analyzer", code_output_analyzer_agent)
+workflow.add_node("new_loop", new_loop_agent)
 # Use add_conditional_edges for cleaner transitions based on the proceed value
 workflow.add_conditional_edges(
     source="problem_analyzer",
@@ -49,7 +53,18 @@ workflow.add_conditional_edges(
 workflow.add_edge("code_generator", "docker_files")
 workflow.add_edge("docker_files", "start_docker")
 workflow.add_edge("start_docker", "output_analyzer")
-workflow.add_edge("output_analyzer", END)
+workflow.add_conditional_edges(
+    source="output_analyzer",
+    path=decide_next_step,  # The function that determines the next step
+    path_map={
+        "continue": "new_loop",  # start new optimization round
+        "done": END,  # THIS WILL BE CHANGED -> GENERATE FINAL REPORT OR SOMETHING LIKE THAT
+    },
+)
+workflow.add_edge(
+    "new_loop", "docker_files"
+)  # Loop back to docker_files for a new optimization round
+# workflow.add_edge("output_analyzer", END)
 workflow.set_entry_point("problem_analyzer")
 app = workflow.compile()
 
