@@ -80,17 +80,28 @@ class OutputOfCode(BaseModel):
     is_goal_achieved: str = Field(
         description="Start with boolean value, but then explain why the goal is achieved or not.",
     )
+    code: Optional[str] = Field(
+        default=None,  # Empty value by default
+        description="Earlier generated python code, this will be added later.",
+    )
+
+
+class FinalReport(BaseModel):
+    index_of_optimization: int = Field(
+        description="From all the optimizations, which one is the best. Use given index to find the best optimization."
+    )
+    reason: str = Field(description="Why this optimization is the best.")
 
 
 class AgentState(TypedDict):
-    userInput: str
-    iterations: int
-    promptFiles: List[str]
+    userInput: str  # Original user input
+    iterations: int  # Number of iterations (Not used yet)
+    promptFiles: List[str]  # Given files whats been uploaded
     messages: List[str]
-    purpose: Purpose
-    proceed: ProceedOption
-    code: Code
-    dockerFiles: DockerFiles
-    docker_output: str
-    result: OutputOfCode
+    purpose: Purpose  # What user want to achieve
+    proceed: ProceedOption  # Enum
+    code: Code  # Python code and requirements
+    dockerFiles: DockerFiles  # DockerFile and compose.yaml
+    docker_output: str  # What running code in docker container outputs
+    result: OutputOfCode  # Results of the code execution - answer, explanation, etc.
     results: List[OutputOfCode]

@@ -193,3 +193,22 @@ NEW_LOOP_CODE_PROMPT = ChatPromptTemplate.from_template(
     - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer), with improvements from the previous iteration and no duplication.**
     """
 )
+
+FINAL_REPORT_PROMPT = ChatPromptTemplate.from_template(
+    """
+    Given the user's task:
+    {user_input}
+
+    And the following optimization codes:
+    {summaries_of_optimizations}
+
+    Your final report should include:
+
+    1. **Performance Comparison**: Evaluate and compare the results of each optimization method, focusing on key metrics such as speed, memory usage, and task accuracy.
+    2. **Best Optimization**: Identify the best optimization for the task, providing a clear explanation of why it is the most effective based on the comparison.
+    3. **Visualization**: If applicable, include a visualization that clearly illustrates the performance differences between the optimizations.
+    4. **Conclusion and Recommendations**: Summarize your findings and suggest potential improvements or note any limitations.
+
+    The report should be concise, structured, and actionable, with a focus on addressing the user's specific task.
+    """
+)
