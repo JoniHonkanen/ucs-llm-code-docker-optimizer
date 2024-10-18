@@ -243,6 +243,7 @@ NEW_LOOP_CODE_PROMPT = ChatPromptTemplate.from_template(
     - Define parameters for testing, based on user input, the provided files, and the results of previous optimizations, to validate the new solution.
     - What packages or libraries are required for requirements.txt to run the generated Python code, including any necessary for file handling (e.g., pandas, openpyxl) if provided data includes Excel or other files? Ensure to handle potential encoding issues in file reading to avoid errors.
     - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer), with improvements from the previous iteration and no duplication.**
+    - Ensure the generated Python code is **free from syntax errors**. All functions should be properly defined, and indentation should follow Python's strict indentation rules. Ensure all variables, function definitions, and imports are correctly structured.
     """
 )
 
@@ -295,6 +296,8 @@ NEW_LOOP_CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
     - Define parameters for testing, based on user input and the results of previous optimizations, to validate the new solution.
     - What packages or libraries are required for requirements.txt to run the generated Python code?
     - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer), with improvements from the previous iteration and no duplication.**
+    - Ensure the generated Python code is **free from syntax errors**. All functions should be properly defined, and indentation should follow Python's strict indentation rules. Ensure all variables, function definitions, and imports are correctly structured.
+
     """
 )
 

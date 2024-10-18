@@ -166,6 +166,9 @@ async def code_generator_agent(state: AgentState):
 
     state["code"] = response
 
+    print("\n\n\n CODE HOMMA:")
+    print(response)
+
     def clean_text(text):
         return text.encode("utf-8", "replace").decode("utf-8")
 
@@ -472,9 +475,17 @@ async def new_loop_agent(state: AgentState):
         await cl.Message(content=f"Error during new optimization round: {e}").send()
         return state
 
+    # Escape double quotes in the response before parsing
+    def clean_text(text):
+        # Escape double quotes to avoid breaking JSON
+        return text.replace('"', '\\"').encode("utf-8", "replace").decode("utf-8")
+
+    # Clean the full response before parsing
+    cleaned_response = clean_text(full_response)
+
     # Parse the full response
     try:
-        response = output_parser.parse(full_response)
+        response = output_parser.parse(cleaned_response)
     except Exception as e:
         await cl.Message(content=f"Error parsing new code response: {e}").send()
         return state
@@ -561,6 +572,6 @@ async def final_report_agent(state: AgentState):
     best_optimization = results[index_of_best_optimization - 1]
 
     # Send the final report to the user
-    await cl.Message(content=best_optimization.code).send()
+    await cl.Message(content=best_optimization.code, language="python").send()
 
     return state

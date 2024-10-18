@@ -174,7 +174,4 @@ async def main(message: cl.Message):
     )
 
     # Invoke the agent with the state
-    results = await app.ainvoke(state)
-
-    # Send the results back to the user
-    await cl.Message(content=f"Tässä ovat tulokset:\n{results}").send()
+    await app.ainvoke(state)
