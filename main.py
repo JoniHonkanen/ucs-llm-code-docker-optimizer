@@ -77,6 +77,7 @@ async def main(message: cl.Message):
     file_data = {}
 
     # Check if there are any elements in the message
+    # Check if there are any elements in the message
     if message.elements:
         for element in message.elements:
             # Check if the element is a File
@@ -86,21 +87,10 @@ async def main(message: cl.Message):
 
                 # Define the new file path in the generated directory
                 new_file_path = os.path.join(generated_dir, file_name)
-                # Save the file to the 'generated' directory
-                try:
-                    with open(file_path, "rb") as f_in, open(
-                        new_file_path, "wb"
-                    ) as f_out:
-                        f_out.write(f_in.read())
-                    print(f"Tiedosto {file_name} tallennettu /generated-hakemistoon.")
-                except Exception as e:
-                    await cl.Message(
-                        content=f"Virhe tiedoston {file_name} tallentamisessa: {str(e)}"
-                    ).send()
 
-                # Check file extension
+                # Check file extension first to decide handling
                 if file_name.endswith((".xlsx", ".xls")):
-                    # Process Excel file
+                    # Process Excel file as binary
                     try:
                         # Read Excel file from the file path
                         dfs = pd.read_excel(file_path, sheet_name=None)
@@ -130,6 +120,19 @@ async def main(message: cl.Message):
                     await cl.Message(
                         content=f"Tuntematon tiedostotyyppi: {file_name}"
                     ).send()
+
+                # Now save the file to the 'generated' directory after processing
+                try:
+                    with open(file_path, "rb") as f_in, open(
+                        new_file_path, "wb"
+                    ) as f_out:
+                        f_out.write(f_in.read())
+                    print(f"Tiedosto {file_name} tallennettu /generated-hakemistoon.")
+                except Exception as e:
+                    await cl.Message(
+                        content=f"Virhe tiedoston {file_name} tallentamisessa: {str(e)}"
+                    ).send()
+
         await cl.Message(
             content="Tiedostot käsitelty ja tallennettu onnistuneesti."
         ).send()

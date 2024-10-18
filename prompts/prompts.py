@@ -52,12 +52,59 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
     Provided data (Python code, Excel files, or may be empty)
     {data}
     
+    Resource Requirements:
+    {resource_requirements}
+    
+    **Note:** The **Resource Requirements and data** sections is very important for the generated code. It details thkey resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g.quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize thesresource requirements when forming the solution, ensuring that all available resources are utilizeefficiently and constraints are respected.
+
+    
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
     - Should the solution use PuLP for exact optimization, or is a heuristic algorithm more appropriate for solving this problem?
     - How should the code structure reflect the optimization method to ensure clarity and efficiency?
     - Define parameters for testing, based on user input or the provided files, to validate the optimization approach.
     - What packages or libraries are required for requirements.txt to run the generated Python code, including any necessary for file handling (e.g., pandas, openpyxl) if provided data includes Excel or other files? Ensure to handle potential encoding issues in file reading to avoid errors.
+    - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer).**
+    """
+)
+
+CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
+    """
+    Your task is to generate Python code that solves the optimization problem described by the user, using either PuLP (for linear programming) or heuristic algorithms (e.g., genetic algorithms, simulated annealing) depending on the problem's complexity and requirements.
+
+    Based on the user's input, generate Python code that implements either exact optimization (using PuLP) or heuristic algorithms where an approximate solution is more practical. The goal is to develop a solution that efficiently addresses the problem's constraints and objectives.
+
+    The code must be fully functional and structured to solve the task optimally or near-optimally, depending on the method chosen. You should also define any necessary test parameters derived from the user input to validate the solution.
+
+    In your response, generate the following fields:
+    - **python_code**: The fully functional Python code that solves the user's problem.
+    - **requirements**: A comprehensive list of all Python packages or dependencies (e.g., pandas, PuLP) needed to run the generated Python code. This will be used to create a requirements.txt file.
+
+    Summary of the user's input:
+    {user_summary}
+
+    Problem type identified in earlier analysis:
+    {problem_type}
+
+    Optimization focus:
+    {optimization_focus}
+
+    Planned next steps for solving the problem:
+    {next_steps}
+    
+    Resource Requirements:
+    {resource_requirements}
+    
+    **Note:** The **Resource Requirements** section is very important for the generated code. It details thkey resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g.quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize thesresource requirements when forming the solution, ensuring that all available resources are utilizeefficiently and constraints are respected.
+
+    The code **must accurately represent the problem** based on the user's input, ensuring that all key factors (e.g., materials, quantities, constraints) relevant to the user's task are considered.
+    
+    Key points to address:
+    - What is the optimization problem, and what constraints or requirements need to be considered?
+    - Should the solution use PuLP for exact optimization, or is a heuristic algorithm more appropriate for solving this problem?
+    - How should the code structure reflect the optimization method to ensure clarity and efficiency?
+    - Define parameters for testing, based on user input, to validate the optimization approach.
+    - What packages or libraries are required for requirements.txt to run the generated Python code?
     - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer).**
     """
 )
@@ -184,12 +231,69 @@ NEW_LOOP_CODE_PROMPT = ChatPromptTemplate.from_template(
     Provided data (Python code, Excel files, or may be empty):
     {data}
     
+    Resource Requirements:
+    {resource_requirements}
+    
+    **Note:** The **Resource Requirements** section is very important for the generated code. It details thkey resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g.quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize thesresource requirements when forming the solution, ensuring that all available resources are utilizeefficiently and constraints are respected.
+    
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
     - Should the solution use PuLP for exact optimization, or is a heuristic algorithm more appropriate for solving this problem?
     - **How does the new code differ from the last used code?** What improvements have been made to avoid duplication and enhance the previous solution?
     - Define parameters for testing, based on user input, the provided files, and the results of previous optimizations, to validate the new solution.
     - What packages or libraries are required for requirements.txt to run the generated Python code, including any necessary for file handling (e.g., pandas, openpyxl) if provided data includes Excel or other files? Ensure to handle potential encoding issues in file reading to avoid errors.
+    - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer), with improvements from the previous iteration and no duplication.**
+    """
+)
+
+NEW_LOOP_CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
+    """
+    Your task is to generate Python code that solves the optimization problem described by the user, using either PuLP (for linear programming) or heuristic algorithms (e.g., genetic algorithms, simulated annealing) depending on the problem's complexity and requirements.
+
+    You should also take into account the results from previous optimization iterations to further improve the solution. Analyze the previously generated results (e.g., cutting patterns, waste minimization, resource utilization) and incorporate those insights into the next round of optimization. Ensure that the new solution is an improvement over the prior result and **does not duplicate any previous code**.
+
+    Based on the user's input and the outcomes from the previous iteration(s), generate Python code that implements either exact optimization (using PuLP) or heuristic algorithms where an approximate solution is more practical. The goal is to develop a solution that efficiently addresses the problem's constraints and objectives, while **explicitly improving on the last used code**.
+
+    The new code must:
+    - Be fully functional and structured to solve the task optimally or near-optimally, depending on the method chosen.
+    - Avoid duplicating any parts of the previous code and **explicitly comment on what improvements have been made** in terms of efficiency, structure, or the optimization goal (e.g., less waste, faster routes).
+    - Define any necessary test parameters derived from the user input and previous results to validate the new solution.
+
+    In your response, generate the following fields:
+    - **python_code**: The fully functional Python code that solves the user's problem, improving on previous iterations and avoiding duplication of the last used code.
+    - **requirements**: A comprehensive list of all Python packages or dependencies (e.g., pandas, PuLP) needed to run the generated Python code. This will be used to create a requirements.txt file.
+
+    **Original user input:**
+    {user_summary}
+
+    **Original problem type:**
+    {problem_type}
+
+    **Original optimization focus:**
+    {optimization_focus}
+
+    **Original planned next steps:**
+    {next_steps}
+
+    **Results from prior optimizations:**
+    {previous_results}
+    
+    **Last used code:**
+    {previous_code}
+
+    The code **must accurately represent the problem** based on the user's input, ensuring that all key factors (e.g., materials, quantities, constraints) relevant to the user's task are considered. The previous optimization results should also guide the current solution in refining the approach.
+
+    Resource Requirements:
+    {resource_requirements}
+    
+    **Note:** The **Resource Requirements** section is very important for the generated code. It details the key resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g., quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize these resource requirements when forming the solution, ensuring that all available resources are utilized efficiently and constraints are respected.
+    
+    Key points to address:
+    - What is the optimization problem, and what constraints or requirements need to be considered?
+    - Should the solution use PuLP for exact optimization, or is a heuristic algorithm more appropriate for solving this problem?
+    - **How does the new code differ from the last used code?** What improvements have been made to avoid duplication and enhance the previous solution?
+    - Define parameters for testing, based on user input and the results of previous optimizations, to validate the new solution.
+    - What packages or libraries are required for requirements.txt to run the generated Python code?
     - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer), with improvements from the previous iteration and no duplication.**
     """
 )

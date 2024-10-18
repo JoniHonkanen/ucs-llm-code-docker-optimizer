@@ -4,10 +4,12 @@ import chainlit as cl
 from langchain.output_parsers import PydanticOutputParser
 from prompts.prompts import (
     CODE_PROMPT,
+    CODE_PROMPT_NO_DATA,
     DOCKER_FILES_PROMPT,
     TASK_ANALYSIS_PROMPT,
     CODE_OUTPUT_ANALYSIS_PROMPT,
     NEW_LOOP_CODE_PROMPT,
+    NEW_LOOP_CODE_PROMPT_NO_DATA,
     FINAL_REPORT_PROMPT,
 )
 from langchain_openai import ChatOpenAI
@@ -89,7 +91,6 @@ async def problem_analyzer_agent(state: AgentState):
     # Handling the user's response
     if res and res.get("value") == "continue":
         state["proceed"] = "continue"
-        await cl.Message(content="Let's proceed with this plan!").send()
     elif res and res.get("value") == "cancel":
         state["proceed"] = "cancel"
         await cl.Message(content="Alright, let's cancel this and start over!").send()
@@ -108,14 +109,23 @@ async def code_generator_agent(state: AgentState):
     current_step = cl.context.current_step
     inputs = state["purpose"]
 
-    # Prepare the prompt
-    prompt = CODE_PROMPT.format(
-        user_summary=inputs.user_summary,
-        problem_type=inputs.problem_type,
-        optimization_focus=inputs.optimization_focus,
-        next_steps=inputs.next_steps,
-        data=state["promptFiles"],
-    )
+    if state["promptFiles"] == "":
+        prompt = CODE_PROMPT_NO_DATA.format(
+            user_summary=inputs.user_summary,
+            problem_type=inputs.problem_type,
+            optimization_focus=inputs.optimization_focus,
+            next_steps=inputs.next_steps,
+            resource_requirements=inputs.resource_requirements,
+        )
+    else:
+        prompt = CODE_PROMPT.format(
+            user_summary=inputs.user_summary,
+            problem_type=inputs.problem_type,
+            optimization_focus=inputs.optimization_focus,
+            next_steps=inputs.next_steps,
+            data=state["promptFiles"],
+            resource_requirements=inputs.resource_requirements,
+        )
 
     # Display input in the Chainlit interface
     current_step.input = (
@@ -156,12 +166,15 @@ async def code_generator_agent(state: AgentState):
 
     state["code"] = response
 
+    def clean_text(text):
+        return text.encode("utf-8", "replace").decode("utf-8")
+
     # Save the generated code and requirements to files
     with open("generated/generated.py", "w", encoding="utf-8") as f:
-        f.write(response.python_code)
+        f.write(clean_text(response.python_code))
 
     with open("generated/requirements.txt", "w", encoding="utf-8") as f:
-        f.write(response.requirements)
+        f.write(clean_text(response.requirements))
 
     return state
 
@@ -246,7 +259,11 @@ async def start_docker_container_agent(state: AgentState):
         print("Building Docker image...")
         build_command = ["docker-compose", "build"]
         build_process = subprocess.Popen(
-            build_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+            build_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
         )
 
         for line in build_process.stdout:
@@ -268,7 +285,11 @@ async def start_docker_container_agent(state: AgentState):
             "--no-log-prefix",
         ]
         up_process = subprocess.Popen(
-            up_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+            up_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
         )
 
         for line in up_process.stdout:
@@ -397,16 +418,27 @@ async def new_loop_agent(state: AgentState):
     last_code = state["code"]
     last_output = state["result"]
 
-    # Prepare the prompt
-    prompt = NEW_LOOP_CODE_PROMPT.format(
-        user_summary=inputs.user_summary,
-        problem_type=inputs.problem_type,
-        optimization_focus=inputs.optimization_focus,
-        next_steps=inputs.next_steps,
-        data=state["promptFiles"],
-        previous_results=last_output.answer_description,
-        previous_code=last_code.python_code,
-    )
+    if state["promptFiles"] == "":
+        prompt = NEW_LOOP_CODE_PROMPT_NO_DATA.format(
+            user_summary=inputs.user_summary,
+            problem_type=inputs.problem_type,
+            optimization_focus=inputs.optimization_focus,
+            next_steps=inputs.next_steps,
+            previous_results=last_output.answer_description,
+            previous_code=last_code.python_code,
+            resource_requirements=inputs.resource_requirements,
+        )
+    else:
+        prompt = NEW_LOOP_CODE_PROMPT.format(
+            user_summary=inputs.user_summary,
+            problem_type=inputs.problem_type,
+            optimization_focus=inputs.optimization_focus,
+            next_steps=inputs.next_steps,
+            data=state["promptFiles"],
+            previous_results=last_output.answer_description,
+            previous_code=last_code.python_code,
+            resource_requirements=inputs.resource_requirements,
+        )
 
     # Display input in the Chainlit interface
     current_step.input = (

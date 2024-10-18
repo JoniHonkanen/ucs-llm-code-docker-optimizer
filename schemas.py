@@ -10,7 +10,6 @@ class ProceedOption(str, Enum):
     NEW = "new"
     DONE = "done"
 
-
 # Schema for whole code project
 class Purpose(BaseModel):
     user_summary: str = Field(
@@ -31,6 +30,9 @@ class Purpose(BaseModel):
     goal: str = Field(
         description="The core objective of the task, summarizing the user's real goal and the purpose of solving the task."
     )
+    resource_requirements: str = Field(
+        description="Specific requirements or allocations for the resource, such as how much is required for each task, order, or destination. This should include all the important details needed to solve the problem effectively."
+    )
 
 
 class Code(BaseModel):
@@ -43,7 +45,7 @@ class Code(BaseModel):
     )
     resources: Optional[str] = Field(
         default="No additional resources provided",  # Default value in case it's missing
-        description="Any additional requirements or files, such as data sheets (Excel files) or other resources, that are not included in the main requirements list but are necessary for the program.",
+        description="If no resources added, use default answer. Any additional requirements or files, such as data sheets (Excel files) or other resources, that are not included in the main requirements list but are necessary for the program.",
     )
 
 
