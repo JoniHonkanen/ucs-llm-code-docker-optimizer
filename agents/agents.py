@@ -166,9 +166,7 @@ async def code_generator_agent(state: AgentState):
 
     state["code"] = response
 
-    print("\n\n\n CODE HOMMA:")
-    print(response)
-
+    # This function ensures the input text is safely encoded in UTF-8. 
     def clean_text(text):
         return text.encode("utf-8", "replace").decode("utf-8")
 
@@ -269,6 +267,7 @@ async def start_docker_container_agent(state: AgentState):
             encoding="utf-8",
         )
 
+        # Loops through each line of stdout from the build process
         for line in build_process.stdout:
             print(line, end="")
             full_output += line
@@ -276,6 +275,7 @@ async def start_docker_container_agent(state: AgentState):
 
         build_process.wait()
 
+        # check if the build process was successful (0 is success)
         if build_process.returncode != 0:
             raise Exception("Docker image build failed")
 
@@ -458,9 +458,13 @@ async def new_loop_agent(state: AgentState):
     # Set up the output parser
     output_parser = PydanticOutputParser(pydantic_object=Code)
     format_instructions = output_parser.get_format_instructions()
+    print(format_instructions)
 
     # Append format instructions to the prompt
     prompt += f"\n\n{format_instructions}"
+
+    print("Prompt:")
+    print(prompt)
 
     # Collect the full response while streaming
     full_response = ""
@@ -475,10 +479,8 @@ async def new_loop_agent(state: AgentState):
         await cl.Message(content=f"Error during new optimization round: {e}").send()
         return state
 
-    # Escape double quotes in the response before parsing
     def clean_text(text):
-        # Escape double quotes to avoid breaking JSON
-        return text.replace('"', '\\"').encode("utf-8", "replace").decode("utf-8")
+        return text.encode("utf-8", "replace").decode("utf-8")
 
     # Clean the full response before parsing
     cleaned_response = clean_text(full_response)
@@ -488,6 +490,8 @@ async def new_loop_agent(state: AgentState):
         response = output_parser.parse(cleaned_response)
     except Exception as e:
         await cl.Message(content=f"Error parsing new code response: {e}").send()
+        print("Error parsing new code response")
+        print(e)
         return state
 
     state["code"] = response
@@ -506,7 +510,7 @@ async def new_loop_agent(state: AgentState):
 
     with open("generated/requirements.txt", "w", encoding="utf-8") as f:
         f.write(response.requirements)
-
+    print("New Loop Agent done")
     return state
 
 

@@ -57,6 +57,8 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
     
     **Note:** The **Resource Requirements and data** sections is very important for the generated code. It details thkey resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g.quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize thesresource requirements when forming the solution, ensuring that all available resources are utilizeefficiently and constraints are respected.
 
+    ### Important Instructions
+    **Do not include code block formatting (e.g., `````json ... `````) in your response.** Only output the plain JSON object.
     
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
@@ -98,6 +100,9 @@ CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
     **Note:** The **Resource Requirements** section is very important for the generated code. It details thkey resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g.quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize thesresource requirements when forming the solution, ensuring that all available resources are utilizeefficiently and constraints are respected.
 
     The code **must accurately represent the problem** based on the user's input, ensuring that all key factors (e.g., materials, quantities, constraints) relevant to the user's task are considered.
+    
+    ### Important Instructions
+    **Do not include code block formatting (e.g., `````json ... `````) in your response.** Only output the plain JSON object.
     
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
@@ -236,6 +241,9 @@ NEW_LOOP_CODE_PROMPT = ChatPromptTemplate.from_template(
     
     **Note:** The **Resource Requirements** section is very important for the generated code. It details thkey resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g.quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize thesresource requirements when forming the solution, ensuring that all available resources are utilizeefficiently and constraints are respected.
     
+    ### Important Instructions
+    **Do not include code block formatting (e.g., `````json ... `````) in your response.** Only output the plain JSON object.
+    
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
     - Should the solution use PuLP for exact optimization, or is a heuristic algorithm more appropriate for solving this problem?
@@ -288,6 +296,9 @@ NEW_LOOP_CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
     {resource_requirements}
     
     **Note:** The **Resource Requirements** section is very important for the generated code. It details the key resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g., quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize these resource requirements when forming the solution, ensuring that all available resources are utilized efficiently and constraints are respected.
+    
+    ### Important Instructions
+    **Do not include code block formatting (e.g., `````json ... `````) in your response.** Only output the plain JSON object.
     
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
