@@ -2,15 +2,16 @@ import os
 import pandas as pd
 import chainlit as cl
 from langgraph.graph import StateGraph, END
-from agents.agents import (
+
+""" from agents.agents import (
     docker_environment_files_agent,
-    problem_analyzer_agent,
     code_generator_agent,
     start_docker_container_agent,
     code_output_analyzer_agent,
     new_loop_agent,
     final_report_agent,
-)
+) """
+from agents import all_agents
 from schemas import AgentState
 
 # Ensure the 'generated' directory exists
@@ -35,13 +36,14 @@ def decide_next_step(state: AgentState):
 
 # Create the graph.
 workflow = StateGraph(AgentState)
-workflow.add_node("problem_analyzer", problem_analyzer_agent)
-workflow.add_node("code_generator", code_generator_agent)
-workflow.add_node("docker_files", docker_environment_files_agent)
-workflow.add_node("start_docker", start_docker_container_agent)
-workflow.add_node("output_analyzer", code_output_analyzer_agent)
-workflow.add_node("new_loop", new_loop_agent)
-workflow.add_node("final_report", final_report_agent)
+workflow.add_node("problem_analyzer", all_agents["problem_analyzer_agent"])
+workflow.add_node("code_generator", all_agents["code_generator_agent"])
+workflow.add_node("docker_files", all_agents["docker_environment_files_agent"])
+workflow.add_node("start_docker", all_agents["start_docker_container_agent"])
+workflow.add_node("output_analyzer", all_agents["code_output_analyzer_agent"])
+workflow.add_node("new_loop", all_agents["new_loop_agent"])
+workflow.add_node("final_report", all_agents["final_report_agent"])
+#workflow.add_node("code_fixer", all_agents["code_fixer_agent"])
 # Use add_conditional_edges for cleaner transitions based on the proceed value
 workflow.add_conditional_edges(
     source="problem_analyzer",

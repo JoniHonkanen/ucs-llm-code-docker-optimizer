@@ -330,3 +330,17 @@ FINAL_REPORT_PROMPT = ChatPromptTemplate.from_template(
     The report should be concise, structured, and actionable, with a focus on addressing the user's specific task.
     """
 )
+
+CODE_FIXER_PROMPT = ChatPromptTemplate.from_template(
+    """
+    The code executed in the Docker container encountered an error. 
+    Below are the logs from the container execution:
+    {docker_output}
+    
+    Here is the code that was run:
+    {code}
+    
+    Your task is to identify and fix the specific error in the code based on the provided logs. 
+    Make only the minimal necessary adjustments to resolve the issue, ensuring the code runs successfully in the Docker container without altering its overall functionality or structure.
+    """
+)

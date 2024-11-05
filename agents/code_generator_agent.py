@@ -1,0 +1,83 @@
+from prompts.prompts import (
+    CODE_PROMPT_NO_DATA,
+    CODE_PROMPT
+)
+from schemas import AgentState, Code
+from .common import cl, PydanticOutputParser, llm
+# Code generator agent
+# Generates Python code based on the user's problem analysis
+@cl.step(name="Code Generator Agent")
+async def code_generator_agent(state: AgentState):
+    print("*** CODE GENERATOR AGENT ***")
+    current_step = cl.context.current_step
+    inputs = state["purpose"]
+
+    if state["promptFiles"] == "":
+        prompt = CODE_PROMPT_NO_DATA.format(
+            user_summary=inputs.user_summary,
+            problem_type=inputs.problem_type,
+            optimization_focus=inputs.optimization_focus,
+            next_steps=inputs.next_steps,
+            resource_requirements=inputs.resource_requirements,
+        )
+    else:
+        prompt = CODE_PROMPT.format(
+            user_summary=inputs.user_summary,
+            problem_type=inputs.problem_type,
+            optimization_focus=inputs.optimization_focus,
+            next_steps=inputs.next_steps,
+            data=state["promptFiles"],
+            resource_requirements=inputs.resource_requirements,
+        )
+
+    # Display input in the Chainlit interface
+    current_step.input = (
+        f"Generating code based on the following inputs:\n\n"
+        f"User Summary: {inputs.user_summary}\n"
+        f"Problem Type: {inputs.problem_type}\n"
+        f"Optimization Focus: {inputs.optimization_focus}\n"
+        f"Next Steps: {inputs.next_steps}\n"
+        f"Data: {state['promptFiles']}"
+    )
+
+    # Set up the output parser
+    output_parser = PydanticOutputParser(pydantic_object=Code)
+    format_instructions = output_parser.get_format_instructions()
+
+    # Append format instructions to the prompt
+    prompt += f"\n\n{format_instructions}"
+
+    # Collect the full response while streaming
+    full_response = ""
+
+    # Stream the response from the LLM
+    try:
+        async for chunk in llm.astream(prompt):
+            if hasattr(chunk, "content"):
+                await current_step.stream_token(chunk.content)
+                full_response += chunk.content
+    except Exception as e:
+        await cl.Message(content=f"Error during code generation: {e}").send()
+        return state
+
+    # Parse the full response
+    try:
+        response = output_parser.parse(full_response)
+    except Exception as e:
+        await cl.Message(content=f"Error parsing code response: {e}").send()
+        return state
+
+    state["code"] = response
+
+    # This function ensures the input text is safely encoded in UTF-8.
+    def clean_text(text):
+        return text.encode("utf-8", "replace").decode("utf-8")
+
+    # Save the generated code and requirements to files
+    with open("generated/generated.py", "w", encoding="utf-8") as f:
+        f.write(clean_text(response.python_code))
+
+    with open("generated/requirements.txt", "w", encoding="utf-8") as f:
+        f.write(clean_text(response.requirements))
+
+    return state
