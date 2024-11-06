@@ -52,14 +52,8 @@ async def problem_analyzer_agent(state: AgentState):
 
     state["purpose"] = response  # Stores parsed response in the state
 
-    # Extracts and formats chatbot response and next steps
-    chatbot_response = response.chatbot_response
-    formatted_next_steps = response.next_steps.replace("\n", "\n\n")
-
-    # Sends formatted response to the user
-    await cl.Message(
-        content=f"{chatbot_response}\n\n**Next Steps:**\n\n{formatted_next_steps}"
-    ).send()
+    # Sends response to the user
+    await cl.Message(content=f"{response.chatbot_response}").send()
 
     # Prompts the user to proceed or make a new plan
     res = await cl.AskActionMessage(

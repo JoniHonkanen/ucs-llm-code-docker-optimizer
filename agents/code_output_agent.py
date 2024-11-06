@@ -14,7 +14,6 @@ async def code_output_analyzer_agent(state: AgentState):
     prompt = CODE_OUTPUT_ANALYSIS_PROMPT.format(
         user_summary=state["purpose"].user_summary,
         original_goal=state["purpose"].goal,
-        next_steps=state["purpose"].next_steps,
         code_output=docker_output,
     )
 
@@ -23,7 +22,6 @@ async def code_output_analyzer_agent(state: AgentState):
         f"Analyzing the code output based on the following inputs:\n\n"
         f"User Summary: {state['purpose'].user_summary}\n"
         f"Original Goal: {state['purpose'].goal}\n"
-        f"Next Steps: {state['purpose'].next_steps}\n"
         f"Code Output:\n```\n{docker_output}\n```"
     )
 

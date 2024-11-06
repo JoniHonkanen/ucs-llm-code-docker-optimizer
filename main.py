@@ -31,7 +31,7 @@ async def on_chat_start():
 def decide_next_step(state: AgentState):
     return state[
         "proceed"
-    ]  # This should return either 'continue', 'new', 'done' or 'cancel'
+    ]  # This should return either 'continue', 'new', 'done', 'fix' or 'cancel'
 
 
 # Create the graph.
@@ -43,7 +43,7 @@ workflow.add_node("start_docker", all_agents["start_docker_container_agent"])
 workflow.add_node("output_analyzer", all_agents["code_output_analyzer_agent"])
 workflow.add_node("new_loop", all_agents["new_loop_agent"])
 workflow.add_node("final_report", all_agents["final_report_agent"])
-#workflow.add_node("code_fixer", all_agents["code_fixer_agent"])
+workflow.add_node("code_fixer", all_agents["code_fixer_agent"])
 # Use add_conditional_edges for cleaner transitions based on the proceed value
 workflow.add_conditional_edges(
     source="problem_analyzer",
@@ -56,7 +56,17 @@ workflow.add_conditional_edges(
 )
 workflow.add_edge("code_generator", "docker_files")
 workflow.add_edge("docker_files", "start_docker")
-workflow.add_edge("start_docker", "output_analyzer")
+# if error occurs during code execution in the Docker container, use code_fixer_agent
+workflow.add_conditional_edges(
+    source="start_docker",
+    path=decide_next_step,  # The function that determines the next step
+    path_map={
+        "fix": "code_fixer",  # Fix the code
+        "continue": "output_analyzer",  # Proceed to the next node
+    },
+)
+workflow.add_edge("code_fixer", "start_docker")  # Try to execute the fixed code again
+# workflow.add_edge("start_docker", "output_analyzer")
 workflow.add_conditional_edges(
     source="output_analyzer",
     path=decide_next_step,  # The function that determines the next step

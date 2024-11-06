@@ -9,6 +9,7 @@ class ProceedOption(str, Enum):
     CANCEL = "cancel"
     NEW = "new"
     DONE = "done"
+    FIX = "fix"
 
 # Schema for whole code project
 class Purpose(BaseModel):
@@ -23,9 +24,6 @@ class Purpose(BaseModel):
     )
     chatbot_response: str = Field(
         description="The chatbot's response to the user, explaining what is the problem, what will be done to solve the problem and why this approach is being taken."
-    )
-    next_steps: str = Field(
-        description="A detailed, numbered list outlining the next actions the AI agents will take to solve and optimize the problem. This includes generating code to address the problem, executing the necessary steps, and iterating through improvements to refine the solution. It should also highlight specific focus areas such as generating algorithms, validating correctness, and ensuring the solution aligns with the stated goals."
     )
     goal: str = Field(
         description="The core objective of the task, summarizing the user's real goal and the purpose of solving the task."

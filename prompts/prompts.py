@@ -45,9 +45,6 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
     Optimization focus:
     {optimization_focus}
 
-    Planned next steps for solving the problem:
-    {next_steps}
-
     The code **must use the provided data (including resources, orders, and any other numeric values or relevant details)** to accurately represent the problem. The solution should ensure that all provided data are appropriately utilized, whether they pertain to materials, quantities, measurements, or any other key factors relevant to the user's task.
     Provided data (Python code, Excel files, or may be empty)
     {data}
@@ -57,8 +54,8 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
     
     **Note:** The **Resource Requirements and data** sections is very important for the generated code. It details thkey resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g.quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize thesresource requirements when forming the solution, ensuring that all available resources are utilizeefficiently and constraints are respected.
 
-    ### Important Instructions
-    **Do not include code block formatting (e.g., `````json ... `````) in your response.** Only output the plain JSON object.
+    ### Important
+    - **Do not include any code block formatting (such as ```json ... ``` or any other markers) in your response.** Output only a plain JSON object.  
     
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
@@ -90,9 +87,6 @@ CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
 
     Optimization focus:
     {optimization_focus}
-
-    Planned next steps for solving the problem:
-    {next_steps}
     
     Resource Requirements:
     {resource_requirements}
@@ -101,8 +95,8 @@ CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
 
     The code **must accurately represent the problem** based on the user's input, ensuring that all key factors (e.g., materials, quantities, constraints) relevant to the user's task are considered.
     
-    ### Important Instructions
-    **Do not include code block formatting (e.g., `````json ... `````) in your response.** Only output the plain JSON object.
+   ### Important
+    - **Do not include any code block formatting (such as ```json ... ``` or any other markers) in your response.** Output only a plain JSON object.  
     
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
@@ -159,9 +153,6 @@ CODE_OUTPUT_ANALYSIS_PROMPT = ChatPromptTemplate.from_template(
     
     **Original Goal:**
     {original_goal}
-    
-    **Planned steps (we should be in last steps now):
-    {next_steps}
 
     **Output of the Code:**
     {code_output}
@@ -222,9 +213,6 @@ NEW_LOOP_CODE_PROMPT = ChatPromptTemplate.from_template(
     **Original optimization focus:**
     {optimization_focus}
 
-    **Original planned next steps:**
-    {next_steps}
-
     **Results from prior optimizations:**
     {previous_results}
     
@@ -281,9 +269,6 @@ NEW_LOOP_CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
     **Original optimization focus:**
     {optimization_focus}
 
-    **Original planned next steps:**
-    {next_steps}
-
     **Results from prior optimizations:**
     {previous_results}
     
@@ -333,14 +318,20 @@ FINAL_REPORT_PROMPT = ChatPromptTemplate.from_template(
 
 CODE_FIXER_PROMPT = ChatPromptTemplate.from_template(
     """
-    The code executed in the Docker container encountered an error. 
-    Below are the logs from the container execution:
+    The following code failed to execute in a Docker container. Use the error details in the logs to identify and fix the issue.
+
+    **Container Logs**:
     {docker_output}
     
-    Here is the code that was run:
+    **Original Code**:
     {code}
-    
-    Your task is to identify and fix the specific error in the code based on the provided logs. 
-    Make only the minimal necessary adjustments to resolve the issue, ensuring the code runs successfully in the Docker container without altering its overall functionality or structure.
+
+    Task:
+    - Identify the specific error based on the logs.
+    - Make only the minimal necessary code adjustments to resolve the issue.
+    - Ensure that the same package/library versions are used without modifying or adding dependencies.
+    - Do not alter external resources (e.g., Excel files) or change their access paths.
+
+    Provide a corrected version of the code that should execute successfully in the Docker container.
     """
 )

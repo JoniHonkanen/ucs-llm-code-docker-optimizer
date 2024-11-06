@@ -1,9 +1,8 @@
-from prompts.prompts import (
-    CODE_PROMPT_NO_DATA,
-    CODE_PROMPT
-)
+from prompts.prompts import CODE_PROMPT_NO_DATA, CODE_PROMPT
 from schemas import AgentState, Code
 from .common import cl, PydanticOutputParser, llm
+
+
 # Code generator agent
 # Generates Python code based on the user's problem analysis
 @cl.step(name="Code Generator Agent")
@@ -17,7 +16,6 @@ async def code_generator_agent(state: AgentState):
             user_summary=inputs.user_summary,
             problem_type=inputs.problem_type,
             optimization_focus=inputs.optimization_focus,
-            next_steps=inputs.next_steps,
             resource_requirements=inputs.resource_requirements,
         )
     else:
@@ -25,7 +23,6 @@ async def code_generator_agent(state: AgentState):
             user_summary=inputs.user_summary,
             problem_type=inputs.problem_type,
             optimization_focus=inputs.optimization_focus,
-            next_steps=inputs.next_steps,
             data=state["promptFiles"],
             resource_requirements=inputs.resource_requirements,
         )
@@ -36,7 +33,6 @@ async def code_generator_agent(state: AgentState):
         f"User Summary: {inputs.user_summary}\n"
         f"Problem Type: {inputs.problem_type}\n"
         f"Optimization Focus: {inputs.optimization_focus}\n"
-        f"Next Steps: {inputs.next_steps}\n"
         f"Data: {state['promptFiles']}"
     )
 

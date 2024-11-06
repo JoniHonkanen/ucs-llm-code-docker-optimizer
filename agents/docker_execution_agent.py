@@ -66,10 +66,13 @@ async def start_docker_container_agent(state: AgentState):
             raise Exception("Docker container execution failed")
 
         state["docker_output"] = full_output
+        state["proceed"] = "continue"
 
     except Exception as e:
         print(f"An error occurred: {e}")
         state["docker_output"] = str(e)
+        # if error, next step is code_fixer_agent
+        state["proceed"] = "fix"
         await cl.Message(content=f"An error occurred: {e}").send()
 
     finally:

@@ -4,6 +4,7 @@ from prompts.prompts import CODE_FIXER_PROMPT
 
 
 # If error occurs during code execution in the Docker container
+@cl.step(name="Code Fixer Agent")
 async def code_fixer_agent(state: AgentState):
     print("*** CODE FIXER AGENT ***")
 
@@ -15,6 +16,9 @@ async def code_fixer_agent(state: AgentState):
     current_step.input = (
         "Fixing the code based on the error encountered during execution."
     )
+    
+    print("\n\nthe code is:", code)
+    print("\n\nthe docker output is:", docker_output)
 
     prompt = CODE_FIXER_PROMPT.format(
         code=code.python_code, docker_output=docker_output
@@ -47,6 +51,8 @@ async def code_fixer_agent(state: AgentState):
         return state
 
     state["code"] = response
+    
+    print("the response is:", response)
 
     # This function ensures the input text is safely encoded in UTF-8.
     def clean_text(text):
@@ -55,3 +61,5 @@ async def code_fixer_agent(state: AgentState):
     # Save the generated code and requirements to files
     with open("generated/generated.py", "w", encoding="utf-8") as f:
         f.write(clean_text(response.python_code))
+
+    return state

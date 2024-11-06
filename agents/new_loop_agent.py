@@ -18,7 +18,6 @@ async def new_loop_agent(state: AgentState):
             user_summary=inputs.user_summary,
             problem_type=inputs.problem_type,
             optimization_focus=inputs.optimization_focus,
-            next_steps=inputs.next_steps,
             previous_results=last_output.answer_description,
             previous_code=last_code.python_code,
             resource_requirements=inputs.resource_requirements,
@@ -28,7 +27,6 @@ async def new_loop_agent(state: AgentState):
             user_summary=inputs.user_summary,
             problem_type=inputs.problem_type,
             optimization_focus=inputs.optimization_focus,
-            next_steps=inputs.next_steps,
             data=state["promptFiles"],
             previous_results=last_output.answer_description,
             previous_code=last_code.python_code,
@@ -41,7 +39,6 @@ async def new_loop_agent(state: AgentState):
         f"User Summary: {inputs.user_summary}\n"
         f"Problem Type: {inputs.problem_type}\n"
         f"Optimization Focus: {inputs.optimization_focus}\n"
-        f"Next Steps: {inputs.next_steps}\n"
         f"Data: {state['promptFiles']}\n"
         f"Previous Results: {last_output.answer_description}\n"
         f"Previous Code:\n```python\n{last_code.python_code}\n```"
