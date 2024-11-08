@@ -31,7 +31,7 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
 
     If the provided files include data sheets (e.g., Excel files), ensure that the necessary packages for file handling (such as pandas or openpyxl) are included, and the code correctly handles file input/output as part of the solution. **It is suggested to explicitly specify file-handling options like using the 'openpyxl' engine for reading `.xlsx` files and ensuring no encoding issues arise by avoiding the default 'charmap' codec or potential encoding conflicts**. The LLM must analyze the files and understand how to process them appropriately.
 
-    In your response, generate the following fields:
+    In your response, generate the following fields as a JSON object:
     - **python_code**: The fully functional Python code that solves the user's problem.
     - **requirements**: A comprehensive list of all Python packages or dependencies (e.g., pandas, PuLP, openpyxl) needed to run the generated Python code. This will be used to create a requirements.txt file.
     - **resources**: List any additional files, resources, or external data (e.g., Excel sheets) that the code requires to run successfully.
@@ -46,18 +46,16 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
     {optimization_focus}
 
     The code **must use the provided data (including resources, orders, and any other numeric values or relevant details)** to accurately represent the problem. The solution should ensure that all provided data are appropriately utilized, whether they pertain to materials, quantities, measurements, or any other key factors relevant to the user's task.
-    Provided data (Python code, Excel files, or may be empty)
+
+    Provided data (Python code, Excel files, or may be empty):
     {data}
     
     Resource Requirements:
     {resource_requirements}
     
-    **Note:** The **Resource Requirements and data** sections is very important for the generated code. It details thkey resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g.quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize thesresource requirements when forming the solution, ensuring that all available resources are utilizeefficiently and constraints are respected.
+    **Note:** The **Resource Requirements and data** sections are very important for the generated code. They detail the key resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g., quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize these resource requirements when forming the solution, ensuring that all available resources are utilized efficiently and constraints are respected.
 
-    ### Important
-    - **Do not include any code block formatting (such as ```json ... ``` or any other markers) in your response.** Output only a plain JSON object.  
-    
-    Key points to address:
+    ### Key Points to Address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
     - Should the solution use PuLP for exact optimization, or is a heuristic algorithm more appropriate for solving this problem?
     - How should the code structure reflect the optimization method to ensure clarity and efficiency?
@@ -66,6 +64,7 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
     - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer).**
     """
 )
+
 
 CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
     """
@@ -325,13 +324,20 @@ CODE_FIXER_PROMPT = ChatPromptTemplate.from_template(
     
     **Original Code**:
     {code}
+    
+    **Original Requirements**:
+    {requirements}
+    
+    **Original Resources (keep same if these are provided)**:
+    {resources}
 
     Task:
-    - Identify the specific error based on the logs.
+    - Identify the specific error based on the Docker container logs.
+    - If the error message indicates potential compatibility issues among the packages, check and suggest compatible versions, making adjustments as needed.
     - Make only the minimal necessary code adjustments to resolve the issue.
-    - Ensure that the same package/library versions are used without modifying or adding dependencies.
+    - Maintain the same package/library versions if possible, unless compatibility issues require specific version changes.
     - Do not alter external resources (e.g., Excel files) or change their access paths.
 
-    Provide a corrected version of the code that should execute successfully in the Docker container.
+    Provide a corrected version of the code along with any necessary version adjustments for packages that should execute successfully in the Docker container.
     """
 )

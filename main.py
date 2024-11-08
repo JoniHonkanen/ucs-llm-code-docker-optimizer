@@ -145,20 +145,6 @@ async def main(message: cl.Message):
                         content=f"Virhe tiedoston {file_name} tallentamisessa: {str(e)}"
                     ).send()
 
-        await cl.Message(
-            content="Tiedostot käsitelty ja tallennettu onnistuneesti."
-        ).send()
-    else:
-        print("Ei liitettyjä tiedostoja.")
-        await cl.Message(content="Ei liitettyjä tiedostoja.").send()
-
-    await cl.Message(content="Aletaan ratkomaan ongelmaa... hetkinen....").send()
-
-    # Print user's message and loaded files
-    print("Käyttäjän syöte:")
-    print("Viesti: " + message.content)
-    print("Tiedostot: " + str(file_data))
-
     # Construct promptFiles
     prompt_files = []
     for filename, content in file_data.items():

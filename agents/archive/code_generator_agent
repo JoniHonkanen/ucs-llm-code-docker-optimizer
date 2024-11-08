@@ -1,11 +1,12 @@
 from prompts.prompts import CODE_PROMPT_NO_DATA, CODE_PROMPT
 from schemas import AgentState, Code
-from .common import cl, llm_code
+from ..common import cl, PydanticOutputParser, llm
 
+#!!! This sometime fails for parsing the response from the model.
+# Thats why its not in use... try to fix it later
 
 # Code generator agent
 # Generates Python code based on the user's problem analysis
-#TODO: there is streamed version in archive, check it and try to get it work... it sometimes fails (error in json structure)
 @cl.step(name="Code Generator Agent")
 async def code_generator_agent(state: AgentState):
     print("*** CODE GENERATOR AGENT ***")
@@ -37,19 +38,44 @@ async def code_generator_agent(state: AgentState):
         f"Data: {state['promptFiles']}"
     )
 
-    structured_llm = llm_code.with_structured_output(Code)
-    res = structured_llm.invoke(prompt)
+    # Set up the output parser
+    output_parser = PydanticOutputParser(pydantic_object=Code)
+    format_instructions = output_parser.get_format_instructions()
 
-    state["code"] = res
-    current_step.output = f"Generated Python code:\n```python\n{res.python_code}\n```"
+    # Append format instructions to the prompt
+    prompt += f"\n\n{format_instructions}"
+
+    # Collect the full response while streaming
+    full_response = ""
+
+    # Stream the response from the LLM
+    try:
+        async for chunk in llm.astream(prompt):
+            if hasattr(chunk, "content"):
+                await current_step.stream_token(chunk.content)
+                full_response += chunk.content
+    except Exception as e:
+        await cl.Message(content=f"Error during code generation: {e}").send()
+        return state
+
+    # Parse the full response
+    try:
+        response = output_parser.parse(full_response)
+    except Exception as e:
+        await cl.Message(content=f"Error parsing code response: {e}").send()
+        return state
+
+    state["code"] = response
+
+    # This function ensures the input text is safely encoded in UTF-8.
+    def clean_text(text):
+        return text.encode("utf-8", "replace").decode("utf-8")
 
     # Save the generated code and requirements to files
     with open("generated/generated.py", "w", encoding="utf-8") as f:
-        # f.write(clean_text(res.python_code))
-        f.write(res.python_code)
+        f.write(clean_text(response.python_code))
 
     with open("generated/requirements.txt", "w", encoding="utf-8") as f:
-        # f.write(clean_text(res.requirements))
-        f.write(res.requirements)
+        f.write(clean_text(response.requirements))
 
     return state

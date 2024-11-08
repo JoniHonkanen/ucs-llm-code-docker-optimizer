@@ -1,4 +1,4 @@
-from .common import cl, PydanticOutputParser, llm
+from .common import cl, PydanticOutputParser, llm_code
 from schemas import AgentState, Code
 from prompts.prompts import CODE_FIXER_PROMPT
 
@@ -16,12 +16,16 @@ async def code_fixer_agent(state: AgentState):
     current_step.input = (
         "Fixing the code based on the error encountered during execution."
     )
-    
-    print("\n\nthe code is:", code)
+    print("\n*******\n")
+    print("the code is:", code)
     print("\n\nthe docker output is:", docker_output)
+    print("\n*******\n:")
 
     prompt = CODE_FIXER_PROMPT.format(
-        code=code.python_code, docker_output=docker_output
+        code=code.python_code,
+        requirements=code.requirements,
+        resources=code.resources,
+        docker_output=docker_output,
     )
 
     # PydanticOutputParser: A LangChain utility that parses the LLM's output into a structured Pydantic model.
@@ -35,7 +39,7 @@ async def code_fixer_agent(state: AgentState):
 
     # Stream the response from the LLM
     try:
-        async for chunk in llm.astream(prompt):
+        async for chunk in llm_code.astream(prompt):
             if hasattr(chunk, "content"):
                 await current_step.stream_token(chunk.content)
                 full_response += chunk.content
@@ -51,7 +55,7 @@ async def code_fixer_agent(state: AgentState):
         return state
 
     state["code"] = response
-    
+
     print("the response is:", response)
 
     # This function ensures the input text is safely encoded in UTF-8.
