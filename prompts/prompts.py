@@ -317,9 +317,11 @@ FINAL_REPORT_PROMPT = ChatPromptTemplate.from_template(
 
 CODE_FIXER_PROMPT = ChatPromptTemplate.from_template(
     """
-    The following code failed to execute in a Docker container. Use the error details in the logs to identify and fix the issue.
+    You are a highly skilled programmer with years of experience in debugging and fixing code. Your main task is to focus on resolving the specific error provided in the container logs.
+    
+    The following code failed to execute in a Docker container. Review the error details in the logs, which point to a specific part of the code that needs fixing.
 
-    **Container Logs**:
+    **Container Logs (error details, make sure that this will be fixed)**:
     {docker_output}
     
     **Original Code**:

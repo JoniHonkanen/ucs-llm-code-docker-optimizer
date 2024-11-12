@@ -1,6 +1,7 @@
 from .common import cl, PydanticOutputParser, llm_code
-from schemas import AgentState, Code
+from schemas import AgentState, Code, CodeFix
 from prompts.prompts import CODE_FIXER_PROMPT
+
 
 # Code is split into two functions to allow for easier testing
 async def fix_code_logic(code: Code, docker_output: str) -> Code:
@@ -21,7 +22,7 @@ async def fix_code_logic(code: Code, docker_output: str) -> Code:
         docker_output=docker_output,
     )
 
-    output_parser = PydanticOutputParser(pydantic_object=Code)
+    output_parser = PydanticOutputParser(pydantic_object=CodeFix)
     format_instructions = output_parser.get_format_instructions()
     prompt += f"\n\n{format_instructions}"
 
@@ -59,7 +60,7 @@ async def code_fixer_agent(state: AgentState):
     print("\n*******\n")
     print("the code is:", code)
     print("\n\nthe docker output is:", docker_output)
-    print("\n*******\n:")
+    print("\n*******\n")
 
     try:
         # Call the core logic function
@@ -68,15 +69,27 @@ async def code_fixer_agent(state: AgentState):
         await cl.Message(content=str(e)).send()
         return state
 
-    state["code"] = response
+    # Convert CodeFix back to Code
+    updated_code = Code(
+        python_code=response.fixed_python_code,
+        requirements=response.requirements,
+        resources=code.resources,  # Keep resources the same if they were not modified
+    )
+
+    state["code"] = updated_code
 
     print("the response is:", response)
 
-    # Save the generated code and requirements to files
+    # Save the generated code to a Python file
     def clean_text(text):
         return text.encode("utf-8", "replace").decode("utf-8")
 
     with open("generated/generated.py", "w", encoding="utf-8") as f:
-        f.write(clean_text(response.python_code))
+        f.write(clean_text(updated_code.python_code))
+
+    # If requirements have changed, save to requirements.txt
+    if response.requirements_changed:
+        with open("generated/requirements.txt", "w", encoding="utf-8") as f:
+            f.write(response.requirements)
 
     return state

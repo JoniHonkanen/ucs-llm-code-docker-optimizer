@@ -2,7 +2,7 @@
 import pytest
 import difflib
 from agents.code_fixer_agent import fix_code_logic
-from schemas import AgentState, Code
+from schemas import AgentState, Code, CodeFix
 
 # Load environment variables for API access
 from dotenv import load_dotenv
@@ -10,84 +10,120 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # You can tests code with error in here...
-error_code = """
-import pandas as pd
-from pulp import LpProblem, LpMinimize, LpVariable, lpSum, LpStatus
+error_code = """import pandas as pd
+from pulp import LpMaximize, LpProblem, LpVariable, lpSum, PULP_CBC_CMD
 
-# Load data from Excel files
+# Load data from the Excel file
 materials_df = pd.read_excel('cutting_stock_problem_data.xlsx', sheet_name='Materials', engine='openpyxl')
 orders_df = pd.read_excel('cutting_stock_problem_data.xlsx', sheet_name='Orders', engine='openpyxl')
 
-# Convert DataFrame to usable lists
-materials = materials_df.to_dict(orient='records')
-orders = orders_df.to_dict(orient='records')
+# Initialize the linear programming problem
+problem = LpProblem("CuttingStockProblem", LpMaximize)
 
-# Create a linear programming problem
-problem = LpProblem('CuttingStockProblem', LpMinimize)
+# Dictionaries to hold data from dataframes
+materials = {}
+orders = {}
 
-# Decision variables: number of each material used for each order
-x = LpVariable.dicts('cut', ((m['Material ID'], o['Order ID']) for m in materials for o in orders), lowBound=0, cat='Integer')
+# Fill materials and orders dictionaries
+for index, row in materials_df.iterrows():
+    materials[row['Material ID']] = {
+        'length': row['Length (mm)'],
+        'width': row['Width (mm)'],
+        'quantity': row['Quantity']
+    }
 
-# Objective function: minimize waste
-problem += lpSum((m['Length (mm)'] - lpSum(x[m['Material ID'], o['Order ID']] * o['Length (mm)'] for o in orders)) * m['Quantity'] for m in materials), 'TotalWaste'
+for index, row in orders_df.iterrows():
+    orders[row['Order ID']] = {
+        'length': row['Length (mm)'],
+        'width': row['Width (mm)'],
+        'quantity': row['Quantity']
+    }
+
+# Decision variables
+x = LpVariable.dicts("cut", ((m, o) for m in materials for o in orders), lowBound=0, cat='Integer')
+
+# Objective: Maximize usage of material
+problem += lpSum(x[m][o] * orders[o]['length'] * orders[o]['width'] for m in materials for o in orders)
 
 # Constraints
-# Ensure each order is fulfilled
+# Ensure that the total order quantity is satisfied
 for o in orders:
-    problem += lpSum(x[m['Material ID'], o['Order ID']] for m in materials) >= o['Quantity'], f"Order_{o['Order ID']}"
+    problem += lpSum(x[m][o] for m in materials) >= orders[o]['quantity'], f"Demand_{o}"
 
-# Ensure we do not exceed material quantities
+# Ensure that material quantity is not exceeded
 for m in materials:
-    problem += lpSum(x[m['Material ID'], o['Order ID']] for o in orders) <= m['Quantity'], f"MaterialLimit_{m['Material ID']}"
+    problem += lpSum(x[m][o] * orders[o]['length'] * orders[o]['width'] for o in orders) <= \
+               materials[m]['length'] * materials[m]['width'] * materials[m]['quantity'], f"Supply_{m}"
 
 # Solve the problem
-problem.solve()
+solver = PULP_CBC_CMD(msg=True)
+problem.solve(solver)
 
-# Output results
-if LpStatus[problem.status] == 'Optimal':
-    print('Optimal Solution Found:')
-    for m in materials:
-        for o in orders:
-            if x[m['Material ID'], o['Order ID']].varValue > 0:
-                print(f"Use {x[m['Material ID'], o['Order ID']].varValue} of {m['Material ID']} for {o['Order ID']}")
-else:
-    print('No optimal solution found')
-"""
+# Output the results
+print("Status:", problem.status)
+for m in materials:
+    for o in orders:
+        print(f"Material {m}, Order {o}: {x[m][o].varValue} pieces")
 
-error_message = "SyntaxError: f-string: unmatched '['"
+print("Total utilized material:", pulp.value(problem.objective))"""
+
+error_message = """Docker container execution failed
+Details:
+Traceback (most recent call last):
+File "/app/generated.py", line 34, in <module>
+problem += lpSum(x[m][o] * orders[o]['length'] * orders[o]['width'] for m in materials for o in orders)
+File "/usr/local/lib/python3.9/site-packages/pulp/pulp.py", line 2233, in lpSum
+return LpAffineExpression().addInPlace(vector)
+File "/usr/local/lib/python3.9/site-packages/pulp/pulp.py", line 867, in addInPlace
+for e in other:
+File "/app/generated.py", line 34, in <genexpr>
+problem += lpSum(x[m][o] * orders[o]['length'] * orders[o]['width'] for m in materials for o in orders)
+KeyError: 'Materiaali 1'
+my-python-app exited with code 1"""
 
 
 @pytest.fixture
 def mock_state():
-    return AgentState(code=Code(python_code=error_code), docker_output=error_message)
+    return AgentState(
+        code=Code(
+            python_code=error_code,
+            requirements="pandas\nopenpyxl\nPuLP",
+            resources="cutting_stock_problem_data.xlsx",
+        ),
+        docker_output=error_message,
+    )
 
 
 @pytest.mark.asyncio
-async def test_fix_code_logic():
-    code = Code(python_code=error_code)
-    docker_output = error_message
+async def test_fix_code_logic(mock_state):
 
     try:
         # Call the core logic function directly
-        response = await fix_code_logic(code, docker_output)
+        response: CodeFix = await fix_code_logic(mock_state["code"], mock_state["docker_output"])
+        print("\n\n\n RESPONSE: ", response)
 
         # Assertions to verify output structure and content
-        assert response.python_code is not None, "Expected code output from LLM"
-        assert isinstance(response.python_code, str), "Expected code output as string"
+        assert response.fixed_python_code is not None, "Expected code output from LLM"
+        assert isinstance(
+            response.fixed_python_code, str
+        ), "Expected code output as string"
 
         # Verify that the original error message is no longer in the code
         assert (
-            error_message not in response.python_code
+            error_message not in response.fixed_python_code
         ), "Expected error to be corrected in output code"
 
         # Print the fixed code for review
         print("\n\n**Fixed code:")
-        print(response.python_code)
+        print(response.fixed_python_code)
 
+        print("\nWhat fixed and why: ", response.fix_description)
+
+        # Print the differences between the original and fixed code
         diff = difflib.unified_diff(
             error_code.splitlines(),
-            response.python_code.splitlines(),
-            fromfile="Original Code",
+            response.fixed_python_code.splitlines(),
+            fromfile="Mock Error Code",
             tofile="Fixed Code",
             lineterm="",
         )
