@@ -1,13 +1,68 @@
 # pytest -s tests/agents/test_code_fixer_agent.py
 import pytest
-import difflib
 from agents.code_fixer_agent import fix_code_logic
 from schemas import AgentState, Code, CodeFix
 
 # Load environment variables for API access
 from dotenv import load_dotenv
 
+from tests.utils.color_print import print_colored_diff
+
 load_dotenv()
+
+# PURPOSE IS TO FIX CODE THAT HAS ERROR IN IT
+# MOCK DATA BELOW
+
+
+@pytest.fixture
+def mock_state():
+    return AgentState(
+        code=Code(
+            python_code=error_code,
+            requirements="pandas\nopenpyxl\nPuLP",
+            resources="cutting_stock_problem_data.xlsx",
+        ),
+        docker_output=error_message,
+    )
+
+
+@pytest.mark.asyncio
+async def test_fix_code_logic(mock_state):
+
+    try:
+        # Call the core logic function directly
+        response: CodeFix = await fix_code_logic(
+            mock_state["code"], mock_state["docker_output"]
+        )
+        print("\n\n\n RESPONSE: ", response)
+
+        # Assertions to verify output structure and content
+        assert response.fixed_python_code is not None, "Expected code output from LLM"
+        assert isinstance(
+            response.fixed_python_code, str
+        ), "Expected code output as string"
+
+        # Verify that the original error message is no longer in the code
+        assert (
+            error_message not in response.fixed_python_code
+        ), "Expected error to be corrected in output code"
+
+        # Print the fixed code for review
+        print("\n\n**Fixed code:")
+        print(response.fixed_python_code)
+
+        print("\nWhat fixed and why: ", response.fix_description)
+
+        print_colored_diff(
+            error_code,
+            response.fixed_python_code,
+            fromfile="Mock Error Code",
+            tofile="Fixed Code",
+        )
+
+    except Exception as e:
+        pytest.fail(f"Test failed with unexpected error: {e}")
+
 
 # You can tests code with error in here...
 error_code = """import pandas as pd
@@ -53,7 +108,7 @@ for o in orders:
 # Ensure that material quantity is not exceeded
 for m in materials:
     problem += lpSum(x[m][o] * orders[o]['length'] * orders[o]['width'] for o in orders) <= \
-               materials[m]['length'] * materials[m]['width'] * materials[m]['quantity'], f"Supply_{m}"
+    materials[m]['length'] * materials[m]['width'] * materials[m]['quantity'], f"Supply_{m}"
 
 # Solve the problem
 solver = PULP_CBC_CMD(msg=True)
@@ -80,57 +135,3 @@ File "/app/generated.py", line 34, in <genexpr>
 problem += lpSum(x[m][o] * orders[o]['length'] * orders[o]['width'] for m in materials for o in orders)
 KeyError: 'Materiaali 1'
 my-python-app exited with code 1"""
-
-
-@pytest.fixture
-def mock_state():
-    return AgentState(
-        code=Code(
-            python_code=error_code,
-            requirements="pandas\nopenpyxl\nPuLP",
-            resources="cutting_stock_problem_data.xlsx",
-        ),
-        docker_output=error_message,
-    )
-
-
-@pytest.mark.asyncio
-async def test_fix_code_logic(mock_state):
-
-    try:
-        # Call the core logic function directly
-        response: CodeFix = await fix_code_logic(mock_state["code"], mock_state["docker_output"])
-        print("\n\n\n RESPONSE: ", response)
-
-        # Assertions to verify output structure and content
-        assert response.fixed_python_code is not None, "Expected code output from LLM"
-        assert isinstance(
-            response.fixed_python_code, str
-        ), "Expected code output as string"
-
-        # Verify that the original error message is no longer in the code
-        assert (
-            error_message not in response.fixed_python_code
-        ), "Expected error to be corrected in output code"
-
-        # Print the fixed code for review
-        print("\n\n**Fixed code:")
-        print(response.fixed_python_code)
-
-        print("\nWhat fixed and why: ", response.fix_description)
-
-        # Print the differences between the original and fixed code
-        diff = difflib.unified_diff(
-            error_code.splitlines(),
-            response.fixed_python_code.splitlines(),
-            fromfile="Mock Error Code",
-            tofile="Fixed Code",
-            lineterm="",
-        )
-
-        print("\n\n**Differences between original and fixed code:")
-        print("\n".join(diff))
-
-        print("Test passed: fix_code_logic function produced a valid response.")
-    except Exception as e:
-        pytest.fail(f"Test failed with unexpected error: {e}")

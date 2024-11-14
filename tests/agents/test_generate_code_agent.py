@@ -7,6 +7,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+## THIS PURPOSE IS TO GENERATE CODE USING PROVIDED FILES AND USER INPUT (WELL LLM GENERATED CONCLUSION OF WHAT USER WANTS)
+# MOCK fileData (promptFiles) DOWN BELOW
+
 
 @pytest.fixture
 def mock_state():
@@ -19,8 +22,26 @@ def mock_state():
             goal="The primary objective is to achieve an optimal cutting strategy that meets all order specifications while minimizing leftover material, thereby enhancing resource utilization and reducing costs.",
             resource_requirements="We need to account for the total lengths and widths of each material available, as well as the required lengths and widths for each order. The materials available are 6000 mm and 8000 mm lengths, while the orders require cuts of 2000 mm, 3000 mm, and 4000 mm lengths in various quantities.",
         ),
-        promptFiles=(
-            """File: cutting_stock_problem_data.xlsx, Sheet: Materials
+        promptFiles=fileData,
+    )
+
+
+@pytest.mark.asyncio
+async def test_code_generator_agent(mock_state):
+    try:
+        # Call `code_generator_agent` with the mock state
+        response: Code = await generate_code_logic(mock_state)
+
+        # Assertions to check the response content
+        assert response.python_code is not None, "Expected code output from LLM"
+
+        # Print the response for verification
+        print(response)
+    except Exception as e:
+        pytest.fail(f"Test failed with unexpected error: {e}")
+
+
+fileData = """File: cutting_stock_problem_data.xlsx, Sheet: Materials
 Data:
 [
   {
@@ -59,20 +80,3 @@ Data:
     "Quantity":3
   }
 ]"""
-        ),
-    )
-
-
-@pytest.mark.asyncio
-async def test_code_generator_agent(mock_state):
-    try:
-        # Call `code_generator_agent` with the mock state
-        response: Code = await generate_code_logic(mock_state)
-
-        # Assertions to check the response content
-        assert response.python_code is not None, "Expected code output from LLM"
-
-        # Print the response for verification
-        print(response)
-    except Exception as e:
-        pytest.fail(f"Test failed with unexpected error: {e}")
