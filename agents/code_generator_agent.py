@@ -4,6 +4,10 @@ from .common import cl, llm_code
 
 #Splitted for two parts for easier testing
 async def generate_code_logic(state: AgentState) -> Code:
+    #User summary: LLM generated summary what user wants
+    #Problem type: Type of the problem user wants to solve (e.g. Cutting Stock Problem)
+    #Optimization focus: What user wants to optimize (e.g. minimize material waste)
+    #Resource requirements: Kind of summary of resources (materials) needed to solve the problem
     inputs = state["purpose"]
 
     # Select the appropriate prompt

@@ -31,6 +31,8 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
 
     If the provided files include data sheets (e.g., Excel files), ensure that the necessary packages for file handling (such as pandas or openpyxl) are included, and the code correctly handles file input/output as part of the solution. **It is suggested to explicitly specify file-handling options like using the 'openpyxl' engine for reading `.xlsx` files and ensuring no encoding issues arise by avoiding the default 'charmap' codec or potential encoding conflicts**. The LLM must analyze the files and understand how to process them appropriately.
 
+    Additionally, ensure that all packages specified in `requirements` include compatible version numbers to avoid conflicts. **The package versions must be compatible with each other to prevent dependency issues**. Research the compatibility requirements if needed and select versions that are widely compatible with standard dependencies (e.g., PuLP, pandas, openpyxl).
+
     In your response, generate the following fields as a JSON object:
     - **python_code**: The fully functional Python code that solves the user's problem.
     - **requirements**: A comprehensive list of all Python packages or dependencies (e.g., pandas, PuLP, openpyxl) needed to run the generated Python code. This will be used to create a requirements.txt file.
@@ -61,6 +63,27 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
     - How should the code structure reflect the optimization method to ensure clarity and efficiency?
     - Define parameters for testing, based on user input or the provided files, to validate the optimization approach.
     - What packages or libraries are required for requirements.txt to run the generated Python code, including any necessary for file handling (e.g., pandas, openpyxl) if provided data includes Excel or other files? Ensure to handle potential encoding issues in file reading to avoid errors.
+    - **Ensure all package versions specified in `requirements` are compatible with each other to prevent dependency conflicts. Use widely compatible versions if exact requirements are unknown, and specify version ranges as needed.**
+    
+    **Example of Compatible Package Versions:**
+    To avoid dependency conflicts, specify versions of required packages that are known to work well together. For example:
+
+      ```plaintext
+      pandas==2.1.1
+      numpy==1.24.3
+      PuLP==2.9.0
+      openpyxl==3.1.5
+      ```
+
+    - **`pandas==2.1.1`**: Compatible with **`numpy`** up to version **1.24.x**.
+    - **`numpy==1.24.3`**: Ensures compatibility with both **`pandas`** and **PuLP**.
+    - **`PuLP==2.9.0`**: Supports Python 3.9 and integrates with **`numpy`**.
+    - **`openpyxl==3.1.5`**: Works with recent Python releases and **`pandas`** for handling `.xlsx` files.
+    
+    *use the following exact package versions if they are included in your code
+
+    By explicitly specifying compatible versions, the generated code is less likely to encounter issues related to binary incompatibilities or deprecated features.
+    
     - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer).**
     """
 )
@@ -73,6 +96,8 @@ CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
     Based on the user's input, generate Python code that implements either exact optimization (using PuLP) or heuristic algorithms where an approximate solution is more practical. The goal is to develop a solution that efficiently addresses the problem's constraints and objectives.
 
     The code must be fully functional and structured to solve the task optimally or near-optimally, depending on the method chosen. You should also define any necessary test parameters derived from the user input to validate the solution.
+
+    Additionally, ensure that all packages specified in `requirements` include compatible version numbers to avoid conflicts. **The package versions must be compatible with each other to prevent dependency issues**. Research the compatibility requirements if needed and select versions that are widely compatible with standard dependencies (e.g., PuLP, pandas, openpyxl).
 
     In your response, generate the following fields:
     - **python_code**: The fully functional Python code that solves the user's problem.
@@ -90,19 +115,35 @@ CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
     Resource Requirements:
     {resource_requirements}
     
-    **Note:** The **Resource Requirements** section is very important for the generated code. It details thkey resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g.quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize thesresource requirements when forming the solution, ensuring that all available resources are utilizeefficiently and constraints are respected.
+    **Note:** The **Resource Requirements** section is very important for the generated code. It details the key resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g., quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize these resource requirements when forming the solution, ensuring that all available resources are utilized efficiently and constraints are respected.
 
     The code **must accurately represent the problem** based on the user's input, ensuring that all key factors (e.g., materials, quantities, constraints) relevant to the user's task are considered.
-    
-   ### Important
-    - **Do not include any code block formatting (such as ```json ... ``` or any other markers) in your response.** Output only a plain JSON object.  
-    
-    Key points to address:
+
+    ### Key Points to Address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
     - Should the solution use PuLP for exact optimization, or is a heuristic algorithm more appropriate for solving this problem?
     - How should the code structure reflect the optimization method to ensure clarity and efficiency?
     - Define parameters for testing, based on user input, to validate the optimization approach.
-    - What packages or libraries are required for requirements.txt to run the generated Python code?
+    - What packages or libraries are required for requirements.txt to run the generated Python code? Ensure compatibility between package versions to prevent dependency conflicts.
+    - **Ensure all package versions specified in `requirements` are compatible with each other to prevent dependency conflicts. Use widely compatible versions if exact requirements are unknown, and specify version ranges as needed.**
+
+    **Example of Compatible Package Versions:**
+    To avoid dependency conflicts, specify versions of required packages that are known to work well together. For example:
+
+    ```plaintext
+    pandas==2.1.1
+    numpy==1.24.3
+    PuLP==2.9.0
+    openpyxl==3.1.5
+    ```
+
+    - `pandas==2.1.1`: Compatible with modern `numpy` versions (up to 1.24.x), avoiding binary incompatibility issues.
+    - `numpy==1.24.3`: A stable version that ensures compatibility with both `pandas` and the PuLP library.
+    - `PuLP==2.9.0`: Supports Python 3.9+ and integrates seamlessly with `numpy` and other math libraries.
+    - `openpyxl==3.1.5`: A version that supports recent Python releases and works with `pandas` for handling `.xlsx` files.
+
+    By explicitly specifying compatible versions, the generated code is less likely to encounter issues related to binary incompatibilities or deprecated features.
+
     - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer).**
     """
 )
@@ -189,11 +230,9 @@ NEW_LOOP_CODE_PROMPT = ChatPromptTemplate.from_template(
 
     You should also take into account the results from previous optimization iterations to further improve the solution. Analyze the previously generated results (e.g., cutting patterns, waste minimization, resource utilization) and incorporate those insights into the next round of optimization. Ensure that the new solution is an improvement over the prior result and **does not duplicate any previous code**.
 
-    Based on the user's input, the provided files (e.g., Python code, Excel sheets), and the outcomes from the previous iteration(s), generate Python code that implements either exact optimization (using PuLP) or heuristic algorithms where an approximate solution is more practical. The goal is to develop a solution that efficiently addresses the problem's constraints and objectives, while **explicitly improving on the last used code**.
-
     The new code must:
     - Be fully functional and structured to solve the task optimally or near-optimally, depending on the method chosen.
-    - Avoid duplicating any parts of the previous code and **explicitly comment on what improvements have been made** in terms of efficiency, structure, or the optimization goal (e.g., less waste, faster routes).
+    - Avoid duplicating too many parts of the previous code and **explicitly comment on what improvements have been made** in terms of efficiency, structure, or the optimization goal (e.g., less waste, faster routes).
     - Define any necessary test parameters derived from the user input, provided files, and previous results to validate the new solution.
 
     If the provided files include data sheets (e.g., Excel files), ensure that the necessary packages for file handling (such as pandas or openpyxl) are included, and the code correctly handles file input/output as part of the solution. **It is suggested to explicitly specify file-handling options like using the 'openpyxl' engine for reading `.xlsx` files and ensuring no encoding issues arise by avoiding the default 'charmap' codec or potential encoding conflicts**. The LLM must analyze the files and understand how to process them appropriately.
@@ -226,11 +265,25 @@ NEW_LOOP_CODE_PROMPT = ChatPromptTemplate.from_template(
     Resource Requirements:
     {resource_requirements}
     
-    **Note:** The **Resource Requirements** section is very important for the generated code. It details thkey resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g.quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize thesresource requirements when forming the solution, ensuring that all available resources are utilizeefficiently and constraints are respected.
-    
-    ### Important Instructions
-    **Do not include code block formatting (e.g., `````json ... `````) in your response.** Only output the plain JSON object.
-    
+    **Note:** The **Resource Requirements** section is very important for the generated code. It details the key resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g., quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize these resource requirements when forming the solution, ensuring that all available resources are utilized efficiently and constraints are respected.
+
+    **Example of Compatible Package Versions:**
+    To avoid dependency conflicts, specify versions of required packages that are known to work well together. For example:
+
+    ```plaintext
+    pandas==2.1.1
+    numpy==1.24.3
+    PuLP==2.9.0
+    openpyxl==3.1.5
+    ```
+
+    - `pandas==2.1.1`: Compatible with modern `numpy` versions (up to 1.24.x), avoiding binary incompatibility issues.
+    - `numpy==1.24.3`: A stable version that ensures compatibility with both `pandas` and the PuLP library.
+    - `PuLP==2.9.0`: Supports Python 3.9+ and integrates seamlessly with `numpy` and other math libraries.
+    - `openpyxl==3.1.5`: A version that supports recent Python releases and works with `pandas` for handling `.xlsx` files.
+
+    By explicitly specifying compatible versions, the generated code is less likely to encounter issues related to binary incompatibilities or deprecated features.
+
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
     - Should the solution use PuLP for exact optimization, or is a heuristic algorithm more appropriate for solving this problem?
@@ -257,7 +310,7 @@ NEW_LOOP_CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
 
     In your response, generate the following fields:
     - **python_code**: The fully functional Python code that solves the user's problem, improving on previous iterations and avoiding duplication of the last used code.
-    - **requirements**: A comprehensive list of all Python packages or dependencies (e.g., pandas, PuLP) needed to run the generated Python code. This will be used to create a requirements.txt file.
+    - **requirements**: A comprehensive list of all Python packages or dependencies (e.g., pandas, PuLP) needed to run the generated Python code.
 
     **Original user input:**
     {user_summary}
@@ -280,10 +333,22 @@ NEW_LOOP_CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
     {resource_requirements}
     
     **Note:** The **Resource Requirements** section is very important for the generated code. It details the key resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g., quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize these resource requirements when forming the solution, ensuring that all available resources are utilized efficiently and constraints are respected.
-    
-    ### Important Instructions
-    **Do not include code block formatting (e.g., `````json ... `````) in your response.** Only output the plain JSON object.
-    
+
+    **Example of Compatible Package Versions:**
+    To avoid dependency conflicts, specify versions of required packages that are known to work well together. For example:
+
+    ```plaintext
+    pandas==2.1.1
+    numpy==1.24.3
+    PuLP==2.9.0
+    ```
+
+    - `pandas==2.1.1`: Compatible with modern `numpy` versions (up to 1.24.x), avoiding binary incompatibility issues.
+    - `numpy==1.24.3`: A stable version that ensures compatibility with both `pandas` and the PuLP library.
+    - `PuLP==2.9.0`: Supports Python 3.9+ and integrates seamlessly with `numpy` and other math libraries.
+
+    By explicitly specifying compatible versions, the generated code is less likely to encounter issues related to binary incompatibilities or deprecated features.
+
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
     - Should the solution use PuLP for exact optimization, or is a heuristic algorithm more appropriate for solving this problem?
@@ -292,7 +357,6 @@ NEW_LOOP_CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
     - What packages or libraries are required for requirements.txt to run the generated Python code?
     - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer), with improvements from the previous iteration and no duplication.**
     - Ensure the generated Python code is **free from syntax errors**. All functions should be properly defined, and indentation should follow Python's strict indentation rules. Ensure all variables, function definitions, and imports are correctly structured.
-
     """
 )
 
