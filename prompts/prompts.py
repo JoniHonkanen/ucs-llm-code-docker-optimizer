@@ -31,11 +31,11 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
 
     If the provided files include data sheets (e.g., Excel files), ensure that the necessary packages for file handling (such as pandas or openpyxl) are included, and the code correctly handles file input/output as part of the solution. **It is suggested to explicitly specify file-handling options like using the 'openpyxl' engine for reading `.xlsx` files and ensuring no encoding issues arise by avoiding the default 'charmap' codec or potential encoding conflicts**. The LLM must analyze the files and understand how to process them appropriately.
 
-    Additionally, ensure that all packages specified in `requirements` include compatible version numbers to avoid conflicts. **The package versions must be compatible with each other to prevent dependency issues**. Research the compatibility requirements if needed and select versions that are widely compatible with standard dependencies (e.g., PuLP, pandas, openpyxl).
+    Additionally, ensure that all required packages are listed in the `requirements` section, but avoid pinning to specific versions unless necessary. The generated requirements list should specify package names only, allowing pip to install the latest compatible versions to avoid dependency conflicts.
 
     In your response, generate the following fields as a JSON object:
     - **python_code**: The fully functional Python code that solves the user's problem.
-    - **requirements**: A comprehensive list of all Python packages or dependencies (e.g., pandas, PuLP, openpyxl) needed to run the generated Python code. This will be used to create a requirements.txt file.
+    - **requirements**: A list of all Python packages or dependencies (e.g., pandas, PuLP, openpyxl) needed to run the generated Python code. Do not include specific version numbers unless explicitly required.
     - **resources**: List any additional files, resources, or external data (e.g., Excel sheets) that the code requires to run successfully.
 
     Summary of the user's input:
@@ -63,27 +63,28 @@ CODE_PROMPT = ChatPromptTemplate.from_template(
     - How should the code structure reflect the optimization method to ensure clarity and efficiency?
     - Define parameters for testing, based on user input or the provided files, to validate the optimization approach.
     - What packages or libraries are required for requirements.txt to run the generated Python code, including any necessary for file handling (e.g., pandas, openpyxl) if provided data includes Excel or other files? Ensure to handle potential encoding issues in file reading to avoid errors.
-    - **Ensure all package versions specified in `requirements` are compatible with each other to prevent dependency conflicts. Use widely compatible versions if exact requirements are unknown, and specify version ranges as needed.**
-    
-    **Example of Compatible Package Versions:**
-    To avoid dependency conflicts, specify versions of required packages that are known to work well together. For example:
+    - **Ensure the `requirements` section lists all necessary Python packages without specifying exact versions unless required by specific compatibility needs. This allows pip to install the latest compatible versions automatically.**
 
-      ```plaintext
-      pandas==2.1.1
-      numpy==1.24.3
-      PuLP==2.9.0
-      openpyxl==3.1.5
-      ```
+    Example of how `requirements.txt` could look:
 
-    - **`pandas==2.1.1`**: Compatible with **`numpy`** up to version **1.24.x**.
-    - **`numpy==1.24.3`**: Ensures compatibility with both **`pandas`** and **PuLP**.
-    - **`PuLP==2.9.0`**: Supports Python 3.9 and integrates with **`numpy`**.
-    - **`openpyxl==3.1.5`**: Works with recent Python releases and **`pandas`** for handling `.xlsx` files.
-    
-    *use the following exact package versions if they are included in your code
+    ```plaintext
+    pandas
+    PuLP
+    openpyxl
+    ```
 
-    By explicitly specifying compatible versions, the generated code is less likely to encounter issues related to binary incompatibilities or deprecated features.
-    
+    - This example avoids version pinning and allows pip to install the latest compatible versions of the required packages.
+
+    If version pinning is needed for specific reasons (e.g., due to compatibility issues or reproducibility requirements), here is an example of how to specify versions:
+
+    ```plaintext
+    pandas==2.1.1
+    PuLP==2.9.0
+    openpyxl==3.1.5
+    ```
+
+    Choose the approach that best fits the user's needs: version-free for flexibility or version-pinned for stability and reproducibility.
+
     - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer).**
     """
 )
@@ -124,25 +125,26 @@ CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
     - Should the solution use PuLP for exact optimization, or is a heuristic algorithm more appropriate for solving this problem?
     - How should the code structure reflect the optimization method to ensure clarity and efficiency?
     - Define parameters for testing, based on user input, to validate the optimization approach.
-    - What packages or libraries are required for requirements.txt to run the generated Python code? Ensure compatibility between package versions to prevent dependency conflicts.
-    - **Ensure all package versions specified in `requirements` are compatible with each other to prevent dependency conflicts. Use widely compatible versions if exact requirements are unknown, and specify version ranges as needed.**
+    - What packages or libraries are required for requirements.txt to run the generated Python code, including any necessary for file handling (e.g., pandas, openpyxl) if provided data includes Excel or other files? Ensure to handle potential encoding issues in file reading to avoid errors.
+    - **Ensure the `requirements` section lists all necessary Python packages without specifying exact versions unless required by specific compatibility needs. This allows pip to install the latest compatible versions automatically.**
 
-    **Example of Compatible Package Versions:**
-    To avoid dependency conflicts, specify versions of required packages that are known to work well together. For example:
+    Example of how `requirements.txt` could look:
+
+    ```plaintext
+    pandas
+    PuLP
+    openpyxl
+    ```
+
+    - This example avoids version pinning and allows pip to install the latest compatible versions of the required packages.
+
+    If version pinning is needed for specific reasons (e.g., due to compatibility issues or reproducibility requirements), here is an example of how to specify versions:
 
     ```plaintext
     pandas==2.1.1
-    numpy==1.24.3
     PuLP==2.9.0
     openpyxl==3.1.5
     ```
-
-    - `pandas==2.1.1`: Compatible with modern `numpy` versions (up to 1.24.x), avoiding binary incompatibility issues.
-    - `numpy==1.24.3`: A stable version that ensures compatibility with both `pandas` and the PuLP library.
-    - `PuLP==2.9.0`: Supports Python 3.9+ and integrates seamlessly with `numpy` and other math libraries.
-    - `openpyxl==3.1.5`: A version that supports recent Python releases and works with `pandas` for handling `.xlsx` files.
-
-    By explicitly specifying compatible versions, the generated code is less likely to encounter issues related to binary incompatibilities or deprecated features.
 
     - **Make sure the code outputs the final result clearly (e.g., using print statements or by returning the result in a structured format like a table or numerical answer).**
     """
@@ -267,22 +269,25 @@ NEW_LOOP_CODE_PROMPT = ChatPromptTemplate.from_template(
     
     **Note:** The **Resource Requirements** section is very important for the generated code. It details the key resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g., quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize these resource requirements when forming the solution, ensuring that all available resources are utilized efficiently and constraints are respected.
 
-    **Example of Compatible Package Versions:**
-    To avoid dependency conflicts, specify versions of required packages that are known to work well together. For example:
+    - **Ensure the `requirements` section lists all necessary Python packages without specifying exact versions unless required by specific compatibility needs. This allows pip to install the latest compatible versions automatically.**
+
+    Example of how `requirements.txt` could look:
+
+    ```plaintext
+    pandas
+    PuLP
+    openpyxl
+    ```
+
+    - This example avoids version pinning and allows pip to install the latest compatible versions of the required packages.
+
+    If version pinning is needed for specific reasons (e.g., due to compatibility issues or reproducibility requirements), here is an example of how to specify versions:
 
     ```plaintext
     pandas==2.1.1
-    numpy==1.24.3
     PuLP==2.9.0
     openpyxl==3.1.5
     ```
-
-    - `pandas==2.1.1`: Compatible with modern `numpy` versions (up to 1.24.x), avoiding binary incompatibility issues.
-    - `numpy==1.24.3`: A stable version that ensures compatibility with both `pandas` and the PuLP library.
-    - `PuLP==2.9.0`: Supports Python 3.9+ and integrates seamlessly with `numpy` and other math libraries.
-    - `openpyxl==3.1.5`: A version that supports recent Python releases and works with `pandas` for handling `.xlsx` files.
-
-    By explicitly specifying compatible versions, the generated code is less likely to encounter issues related to binary incompatibilities or deprecated features.
 
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?
@@ -334,20 +339,26 @@ NEW_LOOP_CODE_PROMPT_NO_DATA = ChatPromptTemplate.from_template(
     
     **Note:** The **Resource Requirements** section is very important for the generated code. It details the key resources available (e.g., materials, vehicles, personnel) and specific requirements (e.g., quantities, sizes) that must be fulfilled to solve the problem. The generated code must prioritize these resource requirements when forming the solution, ensuring that all available resources are utilized efficiently and constraints are respected.
 
-    **Example of Compatible Package Versions:**
-    To avoid dependency conflicts, specify versions of required packages that are known to work well together. For example:
+    - **Ensure the `requirements` section lists all necessary Python packages without specifying exact versions unless required by specific compatibility needs. This allows pip to install the latest compatible versions automatically.**
+    Example of how `requirements.txt` could look:
+
+    ```plaintext
+    pandas
+    PuLP
+    openpyxl
+    ```
+
+    - This example avoids version pinning and allows pip to install the latest compatible versions of the required packages.
+
+    If version pinning is needed for specific reasons (e.g., due to compatibility issues or reproducibility requirements), here is an example of how to specify versions:
 
     ```plaintext
     pandas==2.1.1
-    numpy==1.24.3
     PuLP==2.9.0
+    openpyxl==3.1.5
     ```
 
-    - `pandas==2.1.1`: Compatible with modern `numpy` versions (up to 1.24.x), avoiding binary incompatibility issues.
-    - `numpy==1.24.3`: A stable version that ensures compatibility with both `pandas` and the PuLP library.
-    - `PuLP==2.9.0`: Supports Python 3.9+ and integrates seamlessly with `numpy` and other math libraries.
-
-    By explicitly specifying compatible versions, the generated code is less likely to encounter issues related to binary incompatibilities or deprecated features.
+    Choose the approach that best fits the user's needs: version-free for flexibility or version-pinned for stability and reproducibility.
 
     Key points to address:
     - What is the optimization problem, and what constraints or requirements need to be considered?

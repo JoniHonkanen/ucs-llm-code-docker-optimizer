@@ -36,7 +36,9 @@ async def test_code_generator_agent(mock_state):
         assert response.python_code is not None, "Expected code output from LLM"
 
         # Print the response for verification
-        print(response)
+        print("\n"+response.python_code)
+        print("\n"+response.requirements)
+        print("\n"+response.resources)
     except Exception as e:
         pytest.fail(f"Test failed with unexpected error: {e}")
 

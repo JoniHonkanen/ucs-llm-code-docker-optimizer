@@ -61,7 +61,9 @@ async def code_generator_agent(state: AgentState) -> AgentState:
 
     # Update the Chainlit step output with the generated code
     current_step.output = (
-        f"Generated Python code:\n```python\n{response.python_code}\n```"
+        f"Generated Python code:\n```python\n{response.python_code}\n```",
+        f"Requirements:\n```\n{response.requirements}\n```",
+        f"Resources:\n```\n{response.resources}\n```",
     )
 
     # Update the state with the generated code
