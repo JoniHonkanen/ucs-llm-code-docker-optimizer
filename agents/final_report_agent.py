@@ -6,6 +6,7 @@ from prompts.prompts import FINAL_REPORT_PROMPT
 # Final report, decide which optimization is best and why
 # This agent is the last agent in the chain
 # Should provide a final report and code for the best optimization
+@cl.step(name="Final Report Agent")
 async def final_report_agent(state: AgentState):
     print("*** FINAL REPORT AGENT ***")
     current_step = cl.context.current_step
@@ -65,6 +66,7 @@ async def final_report_agent(state: AgentState):
     best_optimization = results[index_of_best_optimization - 1]
 
     # Send the final report to the user
+    await cl.Message(content=response.reason).send()
     await cl.Message(content=best_optimization.code, language="python").send()
 
     return state
