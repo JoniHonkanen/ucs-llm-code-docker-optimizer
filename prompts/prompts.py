@@ -440,3 +440,13 @@ EXECUTION_CONTRACT = """
   always complete the computation with the information given and report its assumptions and any
   gaps. It cannot wait for approvals, confirmations or extra files.
 """
+
+# Appended to the code fixer's prompt: it can ask for the full logs instead of guessing.
+FULL_LOGS_INSTRUCTIONS = """
+### If the error text above is not enough
+You see the error the system captured and the last lines of the Docker logs. If they do not show
+the cause, or you suspect the Docker setup (Dockerfile, compose.yaml, file locations) rather than
+the code, set "need_full_logs" to true and give the reason in "full_logs_reason". You will then
+get a longer part of the build and run log together with the Dockerfile and compose.yaml, and
+you are asked for the fix again. You cannot change the Dockerfile or compose.yaml yourself.
+"""

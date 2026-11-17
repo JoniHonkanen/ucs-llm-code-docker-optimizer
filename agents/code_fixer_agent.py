@@ -1,16 +1,18 @@
 from .common import cl, PydanticOutputParser, llm_code
 from schemas import AgentState, Code, CodeFix
-from prompts.prompts import CODE_FIXER_PROMPT, EXECUTION_CONTRACT
+from prompts.prompts import CODE_FIXER_PROMPT, EXECUTION_CONTRACT, FULL_LOGS_INSTRUCTIONS
+from pathlib import Path
 
 
 # Code is split into two functions to allow for easier testing
-async def fix_code_logic(code: Code, docker_output: str) -> Code:
+async def fix_code_logic(code: Code, docker_output: str, full_log: str = None) -> Code:
     """
     Core logic to fix code using the LLM.
 
     Parameters:
     - code: Code object containing the code to be fixed.
     - docker_output: The error message from the docker execution.
+    - full_log: The tail of the full build and run log, when the fixer has asked for it.
 
     Returns:
     - A new Code object with the fixed code.
@@ -22,6 +24,16 @@ async def fix_code_logic(code: Code, docker_output: str) -> Code:
         docker_output=docker_output,
     )
     prompt += "\n\n" + EXECUTION_CONTRACT  # how the program is built and run
+    if full_log is None:
+        prompt += "\n\n" + FULL_LOGS_INSTRUCTIONS
+    else:
+        docker_files = ""
+        for name in ("Dockerfile", "compose.yaml"):
+            f = Path("generated") / name
+            docker_files += f"\n--- {name} ---\n" + (f.read_text(encoding="utf-8", errors="replace") if f.exists() else "(missing)")
+        prompt += ("\n\n### Full logs (you asked for them)\nLast part of the complete build and run log:\n"
+                   f"```\n{full_log}\n```\nThe Docker files used:\n```{docker_files}\n```\n"
+                   "Fix the code now; set need_full_logs to false.")
 
     output_parser = PydanticOutputParser(pydantic_object=CodeFix)
     format_instructions = output_parser.get_format_instructions()
@@ -66,6 +78,11 @@ async def code_fixer_agent(state: AgentState):
     try:
         # Call the core logic function
         response = await fix_code_logic(code, docker_output)
+        # The fixer asked for the full logs: ask again, in the same step, with them
+        if response.need_full_logs:
+            print("Code fixer asked for the full logs:", response.full_logs_reason)
+            await cl.Message(content=f"Code fixer asked for the full Docker logs: {response.full_logs_reason}").send()
+            response = await fix_code_logic(code, docker_output, full_log=state.get("docker_full_log") or "(no log recorded)")
     except Exception as e:
         await cl.Message(content=str(e)).send()
         return state
