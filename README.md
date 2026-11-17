@@ -17,6 +17,17 @@ This project was developed using Python, integrating the OpenAI API for language
    1. OPENAI_API_KEY
 4. run program -> chainlit run main.py
 
+Docker with Compose V2 (`docker compose`) must be installed.
+
+Optional settings in `.env`:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `LLM_MODEL` | `gpt-4o-mini` | model of the analysis, Docker files, new round and report agents |
+| `LLM_CODE_MODEL` | `gpt-4o` | model of the agents that write and fix programs |
+| `LLM_TEMPERATURE` | LangChain's default (0.7) | temperature of both models; set it empty for reasoning models, which accept only their default |
+| `OPENAI_API_BASE` | OpenAI | an OpenAI-compatible endpoint, e.g. Azure OpenAI (`https://<resource>.openai.azure.com/openai/v1`) |
+
 ![AI Agent at Work](./images/agent_image.png)
 
 # GPT Lab Seinäjoki
