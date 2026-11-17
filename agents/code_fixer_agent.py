@@ -1,11 +1,11 @@
 from .common import cl, PydanticOutputParser, llm_code
 from schemas import AgentState, Code, CodeFix
-from prompts.prompts import CODE_FIXER_PROMPT, EXECUTION_CONTRACT, FULL_LOGS_INSTRUCTIONS
+from prompts.prompts import CODE_FIXER_PROMPT, EXECUTION_CONTRACT, FULL_LOGS_INSTRUCTIONS, FIXER_ROUTE_INSTRUCTIONS
 from pathlib import Path
 
 
 # Code is split into two functions to allow for easier testing
-async def fix_code_logic(code: Code, docker_output: str, full_log: str = None) -> Code:
+async def fix_code_logic(code: Code, docker_output: str, full_log: str = None, history=None) -> Code:
     """
     Core logic to fix code using the LLM.
 
@@ -13,6 +13,7 @@ async def fix_code_logic(code: Code, docker_output: str, full_log: str = None) -
     - code: Code object containing the code to be fixed.
     - docker_output: The error message from the docker execution.
     - full_log: The tail of the full build and run log, when the fixer has asked for it.
+    - history: Earlier fix attempts on the same program (error and action), oldest first.
 
     Returns:
     - A new Code object with the fixed code.
@@ -23,7 +24,10 @@ async def fix_code_logic(code: Code, docker_output: str, full_log: str = None) -
         resources=code.resources,
         docker_output=docker_output,
     )
-    prompt += "\n\n" + EXECUTION_CONTRACT  # how the program is built and run
+    prompt += "\n\n" + EXECUTION_CONTRACT + "\n\n" + FIXER_ROUTE_INSTRUCTIONS
+    if history:
+        prompt += ("\n\n### Earlier fix attempts on this program (they did not solve it; do not repeat them)\n"
+                   + "\n".join(f"{i}. {h}" for i, h in enumerate(history, 1)))
     if full_log is None:
         prompt += "\n\n" + FULL_LOGS_INSTRUCTIONS
     else:
@@ -77,14 +81,40 @@ async def code_fixer_agent(state: AgentState):
 
     try:
         # Call the core logic function
-        response = await fix_code_logic(code, docker_output)
+        response = await fix_code_logic(code, docker_output, history=state.get("fix_history"))
         # The fixer asked for the full logs: ask again, in the same step, with them
         if response.need_full_logs:
             print("Code fixer asked for the full logs:", response.full_logs_reason)
             await cl.Message(content=f"Code fixer asked for the full Docker logs: {response.full_logs_reason}").send()
-            response = await fix_code_logic(code, docker_output, full_log=state.get("docker_full_log") or "(no log recorded)")
+            response = await fix_code_logic(code, docker_output, full_log=state.get("docker_full_log") or "(no log recorded)",
+                                            history=state.get("fix_history"))
     except Exception as e:
         await cl.Message(content=str(e)).send()
+        return state
+
+    # Where the fault is: "code" (the fixed program follows), "docker" (the Docker files agent
+    # corrects the Docker files) or "give_up" (the round ends as a failed round)
+    route = (response.route or "code").strip().lower()
+    if route not in ("code", "docker", "give_up"):
+        route = "code"
+    state["fix_history"] = (state.get("fix_history") or []) + [
+        f"error: {response.original_error} | action: "
+        + (response.fix_description if route == "code" else f"{route}: {response.route_note}")
+    ]
+    print(f"Code fixer route: {route}: {response.route_note}")
+    if route != "code":
+        state["fixIterations"] = state.get("fixIterations", 0) + 1
+        if route == "docker":
+            # only while fix attempts remain (MAX_FIX_ATTEMPTS = 4 in main.py); after that a new
+            # program gets new Docker files anyway
+            state["docker_fix_note"] = response.route_note if state["fixIterations"] < 4 else ""
+            await cl.Message(content=f"Code fixer: the Docker files need a correction: {response.route_note}").send()
+        else:
+            state["gave_up"] = response.route_note
+            state["docker_output"] = (f"The program failed and the fix attempts were given up: {response.route_note}"
+                                      f"\n\nLast program output:\n{state.get('docker_output', '')}")
+            await cl.Message(content=f"Code fixer gave up on this program: {response.route_note}").send()
+        current_step.output = f"route={route}: {response.route_note}"
         return state
 
     # Convert CodeFix back to Code

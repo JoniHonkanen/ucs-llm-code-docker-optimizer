@@ -45,6 +45,7 @@ async def generate_code_logic(state: AgentState) -> Code:
 async def code_generator_agent(state: AgentState) -> AgentState:
     print("*** CODE GENERATOR AGENT ***")
     state["fixIterations"] = 0  # a new program starts with a fresh fix budget
+    state["fix_history"] = []  # and a new fix history
     current_step = cl.context.current_step
 
     # Prepare display input for Chainlit interface

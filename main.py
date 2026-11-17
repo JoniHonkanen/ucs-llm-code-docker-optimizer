@@ -40,9 +40,15 @@ MAX_FIX_ATTEMPTS = 4
 
 
 def decide_next_step_after_fix(state: AgentState):
+    # The code fixer gave up on this program: the round ends as a failed round
+    if state.get("gave_up"):
+        return "output_analyzer"
     if state.get("fixIterations", 0) >= MAX_FIX_ATTEMPTS:
         # a completed round exists: start a new round from it; otherwise start over
         return "new_loop" if state.get("results") else "code_generator"
+    # The code fixer found the fault in the Docker files
+    if state.get("docker_fix_note"):
+        return "docker_files"
     return "continue"
 
 
@@ -84,6 +90,8 @@ workflow.add_conditional_edges(
         "continue": "start_docker",  # Try to execute the fixed code again
         "code_generator": "code_generator",  # Too many failed fixes: write a new program
         "new_loop": "new_loop",  # Too many failed fixes: new round from the last result
+        "docker_files": "docker_files",  # The Docker files need a correction
+        "output_analyzer": "output_analyzer",  # The fixer gave up: the round ends as a failed round
     },
 )
 # workflow.add_edge("start_docker", "output_analyzer")

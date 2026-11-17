@@ -450,3 +450,16 @@ the code, set "need_full_logs" to true and give the reason in "full_logs_reason"
 get a longer part of the build and run log together with the Dockerfile and compose.yaml, and
 you are asked for the fix again. You cannot change the Dockerfile or compose.yaml yourself.
 """
+
+# Appended to the code fixer's prompt: it decides where the fault is.
+FIXER_ROUTE_INSTRUCTIONS = """
+### Decide where the fault is ("route")
+- "code": the program itself is wrong. Return the fixed program.
+- "docker": the Dockerfile or compose.yaml is wrong (for example a wrong command, a missing
+  mount, files not reachable by their plain names, a ${VARIABLE} that is never set). You cannot
+  edit those files; return the program unchanged and describe the correction in "route_note".
+  The Docker files agent will correct them.
+- "give_up": this program cannot be made to work by further fixes (for example its approach is
+  wrong, or the same error keeps coming back). Return the program unchanged and give the reason
+  in "route_note"; the fix attempts stop and the next program is written knowing the reason.
+"""

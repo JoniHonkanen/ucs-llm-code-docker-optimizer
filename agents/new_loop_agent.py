@@ -65,6 +65,7 @@ async def new_loop_logic(state: AgentState) -> Code:
 async def new_loop_agent(state: AgentState) -> AgentState:
     print("*** NEW LOOP AGENT ***")
     state["fixIterations"] = 0  # a new program starts with a fresh fix budget
+    state["fix_history"] = []  # and a new fix history
     current_step = cl.context.current_step
     inputs = state["purpose"]
     last_code = state["code"]
