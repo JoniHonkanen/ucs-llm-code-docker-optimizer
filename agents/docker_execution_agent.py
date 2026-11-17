@@ -109,8 +109,12 @@ async def start_docker_container_agent(state: AgentState):
 
     except Exception as e:
         print(f"An error occurred: {e}")
-        # Combine exception message with captured traceback output
-        state["docker_output"] = f"{str(e)}\n{error_output.strip()}"
+        # Combine exception message with captured traceback output. Build and start-up errors,
+        # and errors a program reports itself, are not Python tracebacks: add the log tail too.
+        log_tail = "\n".join(full_output.strip().splitlines()[-60:])
+        state["docker_output"] = (
+            f"{str(e)}\n{error_output.strip()}\n\nLast lines of the build/run log:\n{log_tail}"
+        )
         print(state["docker_output"])
         state["proceed"] = "fix"
         await cl.Message(
