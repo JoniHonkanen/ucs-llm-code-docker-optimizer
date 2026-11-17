@@ -19,7 +19,7 @@ async def start_docker_container_agent(state: AgentState):
     try:
         # Build the Docker image
         print("Building Docker image...")
-        build_command = ["docker-compose", "build"]
+        build_command = ["docker", "compose", "build"]
         build_process = subprocess.Popen(
             build_command,
             stdout=subprocess.PIPE,
@@ -40,7 +40,8 @@ async def start_docker_container_agent(state: AgentState):
         # Run the Docker container
         print("Running Docker container...")
         up_command = [
-            "docker-compose",
+            "docker",
+            "compose",
             "up",
             "--abort-on-container-exit",
             "--no-log-prefix",
@@ -94,7 +95,7 @@ async def start_docker_container_agent(state: AgentState):
 
     finally:
         # Clean up Docker resources
-        subprocess.run(["docker-compose", "down"])
+        subprocess.run(["docker", "compose", "down"])
         subprocess.run(["docker", "image", "prune", "-f"])
         os.chdir("..")
 
