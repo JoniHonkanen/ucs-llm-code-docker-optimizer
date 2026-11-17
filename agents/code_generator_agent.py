@@ -40,6 +40,7 @@ async def generate_code_logic(state: AgentState) -> Code:
 @cl.step(name="Code Generator Agent")
 async def code_generator_agent(state: AgentState) -> AgentState:
     print("*** CODE GENERATOR AGENT ***")
+    state["fixIterations"] = 0  # a new program starts with a fresh fix budget
     current_step = cl.context.current_step
 
     # Prepare display input for Chainlit interface

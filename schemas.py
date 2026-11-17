@@ -120,5 +120,6 @@ class AgentState(TypedDict):
     code: Code  # Python code and requirements
     dockerFiles: DockerFiles  # DockerFile and compose.yaml
     docker_output: str  # What running code in docker container outputs
+    fixIterations: int  # Fix attempts on the current program
     result: OutputOfCode  # Results of the code execution - answer, explanation, etc.
     results: List[OutputOfCode]
