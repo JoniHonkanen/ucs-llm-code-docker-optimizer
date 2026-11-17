@@ -4,6 +4,23 @@ import re
 import subprocess
 
 
+def cap_pulp(requirements: str) -> str:
+    """Keep an unpinned PuLP below version 4.
+
+    Generated programs use the PuLP API that models know (LpVariable(lowBound=...),
+    PULP_CBC_CMD). PuLP 4 (September 2026, Python >= 3.12) removed both, and it imports numpy
+    without depending on it, so an unpinned "PuLP" in a Python 3.12 image now fails at import
+    or at the first variable. A version the program pins itself is left as it is.
+    """
+    lines = requirements.splitlines()
+    for i, line in enumerate(lines):
+        spec = line.strip()
+        name = re.split(r"[<>=!~\[; ]", spec, maxsplit=1)[0].lower()
+        if name == "pulp" and not re.search(r"==|<|;", spec):
+            lines[i] = spec + (",<4" if re.search(r"[>~!]", spec) else "<4")
+    return "\n".join(lines) + ("\n" if requirements.endswith("\n") else "")
+
+
 # Start Docker container agent
 # Executes the generated code in a Docker container - output results
 @cl.step(name="Start Docker Container Agent")
@@ -15,6 +32,13 @@ async def start_docker_container_agent(state: AgentState):
     os.chdir("generated")
     full_output = ""
     error_output = ""  # To capture the entire traceback if an error occurs
+
+    if os.path.exists("requirements.txt"):
+        with open("requirements.txt", encoding="utf-8") as f:
+            reqs = f.read()
+        if cap_pulp(reqs) != reqs:
+            with open("requirements.txt", "w", encoding="utf-8") as f:
+                f.write(cap_pulp(reqs))
 
     try:
         # Build the Docker image
