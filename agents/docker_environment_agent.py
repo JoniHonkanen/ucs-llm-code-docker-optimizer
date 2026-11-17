@@ -1,5 +1,6 @@
 from prompts.prompts import (
     DOCKER_FILES_PROMPT,
+    EXECUTION_CONTRACT,
 )
 from schemas import AgentState, DockerFiles
 from .common import cl, PydanticOutputParser, llm
@@ -31,6 +32,9 @@ async def docker_environment_files_agent(state: AgentState):
     # Set up the output parser
     output_parser = PydanticOutputParser(pydantic_object=DockerFiles)
     format_instructions = output_parser.get_format_instructions()
+
+    # How the system builds and runs the program
+    prompt += "\n\n" + EXECUTION_CONTRACT
 
     # Append format instructions to the prompt
     prompt += f"\n\n{format_instructions}"

@@ -1,6 +1,6 @@
 from .common import cl, PydanticOutputParser, llm_code
 from schemas import AgentState, Code, CodeFix
-from prompts.prompts import CODE_FIXER_PROMPT
+from prompts.prompts import CODE_FIXER_PROMPT, EXECUTION_CONTRACT
 
 
 # Code is split into two functions to allow for easier testing
@@ -21,6 +21,7 @@ async def fix_code_logic(code: Code, docker_output: str) -> Code:
         resources=code.resources,
         docker_output=docker_output,
     )
+    prompt += "\n\n" + EXECUTION_CONTRACT  # how the program is built and run
 
     output_parser = PydanticOutputParser(pydantic_object=CodeFix)
     format_instructions = output_parser.get_format_instructions()

@@ -1,4 +1,4 @@
-from prompts.prompts import CODE_PROMPT_NO_DATA, CODE_PROMPT
+from prompts.prompts import CODE_PROMPT_NO_DATA, CODE_PROMPT, EXECUTION_CONTRACT
 from schemas import AgentState, Code
 from .common import cl, llm_code
 
@@ -26,6 +26,8 @@ async def generate_code_logic(state: AgentState) -> Code:
             data=state["promptFiles"],
             resource_requirements=inputs.resource_requirements,
         )
+
+    prompt += "\n\n" + EXECUTION_CONTRACT  # how the program will be built and run
 
     # Interact with the LLM
     # JSON-schema response format: function calling, this LangChain version's default, is

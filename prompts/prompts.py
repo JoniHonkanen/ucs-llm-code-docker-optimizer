@@ -418,3 +418,25 @@ CODE_FIXER_PROMPT = ChatPromptTemplate.from_template(
     Provide a corrected version of the code along with any necessary version adjustments for packages that should execute successfully in the Docker container.
     """
 )
+
+
+# How the system builds and runs the generated program. Appended to the prompts of the agents
+# that write the program, the Docker files and the fixes, so that they plan for exactly this.
+EXECUTION_CONTRACT = """
+### How this program will be built and run (fixed; plan the Docker files for exactly this)
+- The project folder (the Docker build context) contains generated.py, requirements.txt, the
+  Dockerfile, compose.yaml and the user's input files, all side by side at the top level.
+  There are no subfolders such as ./data.
+- The system runs, from that folder and with no environment variables set:
+  `docker compose build`, then `docker compose up --abort-on-container-exit`.
+  Nobody can type input, pass extra command-line arguments or set variables later.
+- Therefore: do not use ${VARIABLE} interpolation in compose.yaml. Make the input files
+  available inside the container by their plain file names in the program's working directory
+  (copy the whole build context into the image, or mount the project folder as the working
+  directory). The command must start the complete computation with every argument it needs.
+- Files the program writes into a mounted project folder are kept; what the program prints is
+  passed on for analysis, so the program should print its key results.
+- The program runs unattended and its output is a draft that the user will review. It must
+  always complete the computation with the information given and report its assumptions and any
+  gaps. It cannot wait for approvals, confirmations or extra files.
+"""

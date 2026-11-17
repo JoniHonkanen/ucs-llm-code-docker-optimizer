@@ -1,6 +1,6 @@
 from .common import cl, PydanticOutputParser, llm
 from schemas import AgentState, Code
-from prompts.prompts import NEW_LOOP_CODE_PROMPT, NEW_LOOP_CODE_PROMPT_NO_DATA
+from prompts.prompts import NEW_LOOP_CODE_PROMPT, NEW_LOOP_CODE_PROMPT_NO_DATA, EXECUTION_CONTRACT
 
 
 async def new_loop_logic(state: AgentState) -> Code:
@@ -28,6 +28,8 @@ async def new_loop_logic(state: AgentState) -> Code:
             previous_code=last_code.python_code,
             resource_requirements=inputs.resource_requirements,
         )
+
+    prompt += "\n\n" + EXECUTION_CONTRACT  # how the program will be built and run
 
     # Set up the output parser
     output_parser = PydanticOutputParser(pydantic_object=Code)
