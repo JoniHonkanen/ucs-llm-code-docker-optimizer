@@ -92,4 +92,6 @@ async def code_fixer_agent(state: AgentState):
         with open("generated/requirements.txt", "w", encoding="utf-8") as f:
             f.write(response.requirements)
 
+    state["fixIterations"] = state.get("fixIterations", 0) + 1
+
     return state
