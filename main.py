@@ -34,6 +34,24 @@ def decide_next_step(state: AgentState):
     ]  # This should return either 'continue', 'new', 'done', 'fix' or 'cancel'
 
 
+# After this many failed fix attempts on one program, write a new program instead (as in the
+# 2025 version). Without a limit a failing program is retried until the step limit ends the run.
+MAX_FIX_ATTEMPTS = 4
+
+
+def decide_next_step_after_fix(state: AgentState):
+    # The code fixer gave up on this program: the round ends as a failed round
+    if state.get("gave_up"):
+        return "output_analyzer"
+    if state.get("fixIterations", 0) >= MAX_FIX_ATTEMPTS:
+        # a completed round exists: start a new round from it; otherwise start over
+        return "new_loop" if state.get("results") else "code_generator"
+    # The code fixer found the fault in the Docker files
+    if state.get("docker_fix_note"):
+        return "docker_files"
+    return "continue"
+
+
 # Create the graph.
 workflow = StateGraph(AgentState)
 workflow.add_node("problem_analyzer", all_agents["problem_analyzer_agent"])
@@ -65,7 +83,17 @@ workflow.add_conditional_edges(
         "continue": "output_analyzer",  # Proceed to the next node
     },
 )
-workflow.add_edge("code_fixer", "start_docker")  # Try to execute the fixed code again
+workflow.add_conditional_edges(
+    source="code_fixer",
+    path=decide_next_step_after_fix,
+    path_map={
+        "continue": "start_docker",  # Try to execute the fixed code again
+        "code_generator": "code_generator",  # Too many failed fixes: write a new program
+        "new_loop": "new_loop",  # Too many failed fixes: new round from the last result
+        "docker_files": "docker_files",  # The Docker files need a correction
+        "output_analyzer": "output_analyzer",  # The fixer gave up: the round ends as a failed round
+    },
+)
 # workflow.add_edge("start_docker", "output_analyzer")
 workflow.add_conditional_edges(
     source="output_analyzer",
@@ -171,5 +199,6 @@ async def main(message: cl.Message):
         promptFiles=formatted_data,
     )
 
-    # Invoke the agent with the state
-    await app.ainvoke(state)
+    # Invoke the agent with the state. Each agent call is one step; the LangGraph default of
+    # 25 steps ends a run after a few failed fixes (the 2025 version uses 50).
+    await app.ainvoke(state, config={"recursion_limit": 50})

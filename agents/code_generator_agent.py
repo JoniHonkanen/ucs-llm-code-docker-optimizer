@@ -1,4 +1,4 @@
-from prompts.prompts import CODE_PROMPT_NO_DATA, CODE_PROMPT
+from prompts.prompts import CODE_PROMPT_NO_DATA, CODE_PROMPT, EXECUTION_CONTRACT
 from schemas import AgentState, Code
 from .common import cl, llm_code
 
@@ -27,8 +27,12 @@ async def generate_code_logic(state: AgentState) -> Code:
             resource_requirements=inputs.resource_requirements,
         )
 
+    prompt += "\n\n" + EXECUTION_CONTRACT  # how the program will be built and run
+
     # Interact with the LLM
-    structured_llm = llm_code.with_structured_output(Code)
+    # JSON-schema response format: function calling, this LangChain version's default, is
+    # refused by reasoning models; newer LangChain versions use json_schema by default.
+    structured_llm = llm_code.with_structured_output(Code, method="json_schema")
     response = structured_llm.invoke(prompt)
 
     return response
@@ -40,6 +44,8 @@ async def generate_code_logic(state: AgentState) -> Code:
 @cl.step(name="Code Generator Agent")
 async def code_generator_agent(state: AgentState) -> AgentState:
     print("*** CODE GENERATOR AGENT ***")
+    state["fixIterations"] = 0  # a new program starts with a fresh fix budget
+    state["fix_history"] = []  # and a new fix history
     current_step = cl.context.current_step
 
     # Prepare display input for Chainlit interface

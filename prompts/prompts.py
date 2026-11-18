@@ -418,3 +418,48 @@ CODE_FIXER_PROMPT = ChatPromptTemplate.from_template(
     Provide a corrected version of the code along with any necessary version adjustments for packages that should execute successfully in the Docker container.
     """
 )
+
+
+# How the system builds and runs the generated program. Appended to the prompts of the agents
+# that write the program, the Docker files and the fixes, so that they plan for exactly this.
+EXECUTION_CONTRACT = """
+### How this program will be built and run (fixed; plan the Docker files for exactly this)
+- The project folder (the Docker build context) contains generated.py, requirements.txt, the
+  Dockerfile, compose.yaml and the user's input files, all side by side at the top level.
+  There are no subfolders such as ./data.
+- The system runs, from that folder and with no environment variables set:
+  `docker compose build`, then `docker compose up --abort-on-container-exit`.
+  Nobody can type input, pass extra command-line arguments or set variables later.
+- Therefore: do not use ${VARIABLE} interpolation in compose.yaml. Make the input files
+  available inside the container by their plain file names in the program's working directory
+  (copy the whole build context into the image, or mount the project folder as the working
+  directory). The command must start the complete computation with every argument it needs.
+- Files the program writes into a mounted project folder are kept; what the program prints is
+  passed on for analysis, so the program should print its key results.
+- The program runs unattended and its output is a draft that the user will review. It must
+  always complete the computation with the information given and report its assumptions and any
+  gaps. It cannot wait for approvals, confirmations or extra files.
+"""
+
+# Appended to the code fixer's prompt: it can ask for the full logs instead of guessing.
+FULL_LOGS_INSTRUCTIONS = """
+### If the error text above is not enough
+You see the error the system captured and the last lines of the Docker logs. If they do not show
+the cause, or you suspect the Docker setup (Dockerfile, compose.yaml, file locations) rather than
+the code, set "need_full_logs" to true and give the reason in "full_logs_reason". You will then
+get a longer part of the build and run log together with the Dockerfile and compose.yaml, and
+you are asked for the fix again. You cannot change the Dockerfile or compose.yaml yourself.
+"""
+
+# Appended to the code fixer's prompt: it decides where the fault is.
+FIXER_ROUTE_INSTRUCTIONS = """
+### Decide where the fault is ("route")
+- "code": the program itself is wrong. Return the fixed program.
+- "docker": the Dockerfile or compose.yaml is wrong (for example a wrong command, a missing
+  mount, files not reachable by their plain names, a ${VARIABLE} that is never set). You cannot
+  edit those files; return the program unchanged and describe the correction in "route_note".
+  The Docker files agent will correct them.
+- "give_up": this program cannot be made to work by further fixes (for example its approach is
+  wrong, or the same error keeps coming back). Return the program unchanged and give the reason
+  in "route_note"; the fix attempts stop and the next program is written knowing the reason.
+"""

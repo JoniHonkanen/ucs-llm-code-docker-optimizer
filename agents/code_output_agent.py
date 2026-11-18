@@ -65,6 +65,12 @@ async def code_output_analyzer_agent(state: AgentState):
     # Display the analysis result to the user
     await cl.Message(content=f"Analysis Result:\n{response.answer_description}").send()
 
+    # The code fixer gave up on the program: this round ends as a failed round; the next
+    # program gets a fresh fix budget
+    if state.get("gave_up"):
+        state["gave_up"] = ""
+        state["fixIterations"] = 0
+
     # Ask the user if they want to start a new optimization round
     res = await cl.AskActionMessage(
         content="Let's begin a new optimization round?",

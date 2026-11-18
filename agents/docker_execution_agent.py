@@ -4,6 +4,23 @@ import re
 import subprocess
 
 
+def cap_pulp(requirements: str) -> str:
+    """Keep an unpinned PuLP below version 4.
+
+    Generated programs use the PuLP API that models know (LpVariable(lowBound=...),
+    PULP_CBC_CMD). PuLP 4 (September 2026, Python >= 3.12) removed both, and it imports numpy
+    without depending on it, so an unpinned "PuLP" in a Python 3.12 image now fails at import
+    or at the first variable. A version the program pins itself is left as it is.
+    """
+    lines = requirements.splitlines()
+    for i, line in enumerate(lines):
+        spec = line.strip()
+        name = re.split(r"[<>=!~\[; ]", spec, maxsplit=1)[0].lower()
+        if name == "pulp" and not re.search(r"==|<|;", spec):
+            lines[i] = spec + (",<4" if re.search(r"[>~!]", spec) else "<4")
+    return "\n".join(lines) + ("\n" if requirements.endswith("\n") else "")
+
+
 # Start Docker container agent
 # Executes the generated code in a Docker container - output results
 @cl.step(name="Start Docker Container Agent")
@@ -16,10 +33,17 @@ async def start_docker_container_agent(state: AgentState):
     full_output = ""
     error_output = ""  # To capture the entire traceback if an error occurs
 
+    if os.path.exists("requirements.txt"):
+        with open("requirements.txt", encoding="utf-8") as f:
+            reqs = f.read()
+        if cap_pulp(reqs) != reqs:
+            with open("requirements.txt", "w", encoding="utf-8") as f:
+                f.write(cap_pulp(reqs))
+
     try:
         # Build the Docker image
         print("Building Docker image...")
-        build_command = ["docker-compose", "build"]
+        build_command = ["docker", "compose", "build"]
         build_process = subprocess.Popen(
             build_command,
             stdout=subprocess.PIPE,
@@ -40,7 +64,8 @@ async def start_docker_container_agent(state: AgentState):
         # Run the Docker container
         print("Running Docker container...")
         up_command = [
-            "docker-compose",
+            "docker",
+            "compose",
             "up",
             "--abort-on-container-exit",
             "--no-log-prefix",
@@ -84,8 +109,12 @@ async def start_docker_container_agent(state: AgentState):
 
     except Exception as e:
         print(f"An error occurred: {e}")
-        # Combine exception message with captured traceback output
-        state["docker_output"] = f"{str(e)}\n{error_output.strip()}"
+        # Combine exception message with captured traceback output. Build and start-up errors,
+        # and errors a program reports itself, are not Python tracebacks: add the log tail too.
+        log_tail = "\n".join(full_output.strip().splitlines()[-60:])
+        state["docker_output"] = (
+            f"{str(e)}\n{error_output.strip()}\n\nLast lines of the build/run log:\n{log_tail}"
+        )
         print(state["docker_output"])
         state["proceed"] = "fix"
         await cl.Message(
@@ -93,8 +122,10 @@ async def start_docker_container_agent(state: AgentState):
         ).send()
 
     finally:
+        # Keep the tail of the unfiltered build + run log; the code fixer can ask for it
+        state["docker_full_log"] = "\n".join(full_output.strip().splitlines()[-150:])[-8000:]
         # Clean up Docker resources
-        subprocess.run(["docker-compose", "down"])
+        subprocess.run(["docker", "compose", "down"])
         subprocess.run(["docker", "image", "prune", "-f"])
         os.chdir("..")
 

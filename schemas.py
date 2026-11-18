@@ -66,6 +66,21 @@ class CodeFix(BaseModel):
     original_error: str = Field(
         description="Summary of docker logs (provided error) what needed to be fixed and why."
     )
+    need_full_logs: bool = Field(
+        default=False,
+        description="True if the extracted error is not enough or the Docker setup is suspected; the full log tail and the Docker files are then provided and the fix is asked again.",
+    )
+    full_logs_reason: str = Field(
+        default="", description="Why the full logs are needed (when need_full_logs is true)."
+    )
+    route: str = Field(
+        default="code",
+        description='Where the fault is: "code" (fixed in fixed_python_code), "docker" (the Dockerfile or compose.yaml must change; the code is left as it is) or "give_up" (this program cannot be made to work; the reason goes in route_note).',
+    )
+    route_note: str = Field(
+        default="",
+        description='For "docker": what is wrong in the Docker files and how to correct it. For "give_up": why this program cannot be made to work, so that the next program avoids it.',
+    )
 
 
 class DockerFiles(BaseModel):
@@ -120,5 +135,10 @@ class AgentState(TypedDict):
     code: Code  # Python code and requirements
     dockerFiles: DockerFiles  # DockerFile and compose.yaml
     docker_output: str  # What running code in docker container outputs
+    fixIterations: int  # Fix attempts on the current program
+    docker_full_log: str  # Tail of the unfiltered build + run log, for the code fixer on request
+    docker_fix_note: str  # Code fixer -> Docker files agent: what to correct in the Docker files
+    gave_up: str  # The code fixer gave up on the current program: the reason
+    fix_history: List[str]  # Earlier fix attempts on the current program
     result: OutputOfCode  # Results of the code execution - answer, explanation, etc.
     results: List[OutputOfCode]
